@@ -22,6 +22,13 @@ AUTHOR_FEED_RSS = None
 # Blogroll
 LINKS = (('OzLabs', 'http://ozlabs.org'),)
 
+THEME = "../pelican-octopress-theme"
+
+ARTICLE_PATHS = ['blog']
+ARTICLE_URL = 'blog/{date:%Y}/{date:%m}/{date:%d}/{slug}/'
+ARTICLE_SAVE_AS = 'blog/{date:%Y}/{date:%m}/{date:%d}/{slug}/index.html'
+PAGE_URL = 'pages/{slug}/'
+PAGE_SAVE_AS = 'pages/{slug}/index.html'
 
 # Social widget
 #SOCIAL = (('You can add links in your config file', '#'),
