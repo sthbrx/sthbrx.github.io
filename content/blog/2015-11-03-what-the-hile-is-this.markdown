@@ -1,4 +1,4 @@
-Title: "What the HILE is this?"
+Title: What the HILE is this?
 Date: 2015-11-03 15:02
 Authors: Samuel Mendoza-Jonas
 Category: Petitboot

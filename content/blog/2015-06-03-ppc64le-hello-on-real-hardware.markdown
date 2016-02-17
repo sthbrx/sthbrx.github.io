@@ -1,4 +1,4 @@
-Title: "Running ppc64le_hello on real hardware"
+Title: Running ppc64le_hello on real hardware
 Date: 2015-06-03 12:16
 Category: OpenPower
 Tags: openpower, power, p8

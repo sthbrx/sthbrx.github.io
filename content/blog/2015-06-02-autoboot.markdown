@@ -1,4 +1,4 @@
-Title: "Petitboot Autoboot Changes"
+Title: Petitboot Autoboot Changes
 Date: 2015-06-02 08:11
 Authors: Samuel Mendoza-Jonas
 Category: Autoboot

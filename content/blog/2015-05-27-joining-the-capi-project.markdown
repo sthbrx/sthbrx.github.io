@@ -1,4 +1,4 @@
-Title: "Joining the CAPI project"
+Title: Joining the CAPI project
 Date: 2015-05-27 15:08
 Authors: Daniel Axtens
 Tags: capi, open-power

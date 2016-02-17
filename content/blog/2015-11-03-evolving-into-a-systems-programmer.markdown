@@ -1,4 +1,4 @@
-Title: "Evolving into a systems programmer"
+Title: Evolving into a systems programmer
 Date: 2015-11-06 11:13
 Authors: Cyril Bur
 Category: Education
