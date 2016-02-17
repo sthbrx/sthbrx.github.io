@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 AUTHOR = u'OzLabs'
 SITENAME = u'Store Half Byte-Reverse Indexed'
-SITEURL = 'http://callumscar.github.io'
+SITEURL = 'http://sthbrx.github.io'
 
 PATH = 'content'
 
