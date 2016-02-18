@@ -34,8 +34,8 @@ PAGE_URL = 'pages/{slug}/'
 PAGE_SAVE_AS = 'pages/{slug}/index.html'
 
 # Social widget
-#SOCIAL = (('You can add links in your config file', '#'),
-#          ('Another social link', '#'),)
+#SOCIAL = (('twitter', 'http://twitter.com/', '#'),
+#          ('Google plus', 'https://plus.google.com/collections/featured', '#'),)
 
 DEFAULT_PAGINATION = 2
 
