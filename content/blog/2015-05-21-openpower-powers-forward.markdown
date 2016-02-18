@@ -1,4 +1,4 @@
-Title: "OpenPOWER Powers Forward"
+Title: OpenPOWER Powers Forward
 Authors: Cyril Bur
 Date: 2015-05-21 11:29
 Category:  OpenPower

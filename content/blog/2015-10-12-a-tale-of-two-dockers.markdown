@@ -1,4 +1,4 @@
-Title: "A tale of two Dockers"
+Title: A tale of two Dockers
 Date: 2015-10-12 14:14
 Category: Docker 
 Tags: docker, php, peformance

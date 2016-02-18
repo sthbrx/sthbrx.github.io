@@ -1,4 +1,4 @@
-Title: "Docker: Just Stop Using AUFS"
+Title: Docker: Just Stop Using AUFS
 Date: 2015-10-30 13:30
 Authors: Daniel Axtens
 Tags: docker, aufs, overlay, performance, power
