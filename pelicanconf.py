@@ -38,7 +38,7 @@ PAGE_SAVE_AS = 'pages/{slug}/index.html'
 #          ('Google plus', 'https://plus.google.com/collections/featured/hook', '#'),)
 #          ('reddit', 'https://www.reddit.com/hook', '#'),)
 #          ('Hacker News', 'https://news.ycombinator.com/hook', '#'),)
-#          ('github', 'https://github.com/silverhook', '#'),)
+#          ('github', 'https://github.com/hook', '#'),)
 
 DEFAULT_PAGINATION = 2
 
