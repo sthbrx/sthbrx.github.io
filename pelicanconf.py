@@ -34,11 +34,11 @@ PAGE_URL = 'pages/{slug}/'
 PAGE_SAVE_AS = 'pages/{slug}/index.html'
 
 # Social widget
-#SOCIAL = (('twitter', 'http://twitter.com/', '#'),
-#          ('Google plus', 'https://plus.google.com/collections/featured', '#'),)
-#          ('reddit', 'https://www.reddit.com/', '#'),)
-#          ('Hacker News', 'https://news.ycombinator.com/', '#'),)
-
+#SOCIAL = (('twitter', 'http://twitter.com/hook', '#'),
+#          ('Google plus', 'https://plus.google.com/collections/featured/hook', '#'),)
+#          ('reddit', 'https://www.reddit.com/hook', '#'),)
+#          ('Hacker News', 'https://news.ycombinator.com/hook', '#'),)
+#          ('github', 'https://github.com/silverhook', '#'),)
 
 DEFAULT_PAGINATION = 2
 
