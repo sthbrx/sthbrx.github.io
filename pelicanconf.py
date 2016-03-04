@@ -34,7 +34,7 @@ PAGE_URL = 'pages/{slug}/'
 PAGE_SAVE_AS = 'pages/{slug}/index.html'
 
 # Social widget
-SOCIAL = (('GitHub', 'https://github.com'),
+SOCIAL = (('GitHub', 'https://github.com/sthbrx/sthbrx-blog'),
           ('Google+', 'https://plus.google.com/collections/featured'),
           ('Hacker News', 'https://news.ycombinator.com'),
           ('reddit', 'https://www.reddit.com'),
