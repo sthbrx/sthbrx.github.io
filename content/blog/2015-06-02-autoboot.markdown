@@ -1,7 +1,7 @@
 Title: Petitboot Autoboot Changes
 Date: 2015-06-02 08:11
 Authors: Samuel Mendoza-Jonas
-Category: Autoboot
+Category: Petitboot
 Tags: petitboot, power, p8, openpower, goodposts, autoboot, realcontent
 Slug: autoboot
 

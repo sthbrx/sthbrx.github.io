@@ -34,13 +34,16 @@ PAGE_URL = 'pages/{slug}/'
 PAGE_SAVE_AS = 'pages/{slug}/index.html'
 
 # Social widget
-SOCIAL = (('GitHub', 'https://github.com/sthbrx/sthbrx-blog'),
-          ('Google+', 'https://plus.google.com/collections/featured'),
-          ('Hacker News', 'https://news.ycombinator.com'),
-          ('reddit', 'https://www.reddit.com'),
-          ('Twitter', 'http://twitter.com'),)
+SOCIAL = (('GitHub', 'https://github.com/sthbrx/'),
+          ('linuxppc mailing list', 'https://lists.ozlabs.org/listinfo/linuxppc-dev'),
+          ('Skiboot mailing list', 'https://lists.ozlabs.org/listinfo/skiboot'),
+)
 
-DEFAULT_PAGINATION = 2
+DEFAULT_PAGINATION = 5
 
 # Uncomment following line if you want document-relative URLs when developing
 #RELATIVE_URLS = True
+
+# Don't summarise posts on the home page.
+# Replicates old Octopress behaviour.
+SUMMARY_MAX_LENGTH=None

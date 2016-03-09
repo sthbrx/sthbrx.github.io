@@ -1,3 +1,6 @@
 output/
 *.pyc
 *.swp
+*.pid
+\#*
+.\#*
