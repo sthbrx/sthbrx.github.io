@@ -1,7 +1,7 @@
 Title: Work Experience At Ozlabs
 Authors: Callum Scarvell
 Date: 2016-02-25
-Category: Work Experience
+Category: Education
 Tags: Work Experience, Ozlabs
 
 As a recent year twelve graduate my knowledge of computer science was very limited and my ability to write working programs was all but none. So you can imagine my excitement when I heard of an opening for work experience with IBM's internationally renowned Ozlabs team, or as I knew them the _Linux Gods_. My first day of working at Ozlabs I learnt more about programing then in six years of secondary education. I met most of the Ozlabs team and made connections that will certainly help with my pursuit of a career in IT. Because in business its who you know more than what you know, and now I know the guys at Ozlabs I know how to write code and run it on my own Linux Distro. And on top of all the extremely valuable knowledge I am on a first name basis with the _Linux Gods_ at the LTC.

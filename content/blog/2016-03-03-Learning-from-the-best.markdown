@@ -1,7 +1,7 @@
 Title:Learning From the Best
 Authors: Callum Scarvell
 Date: 2016/03/03
-Category:Education, Work Experience
+Category: Education
 Tags:education, work experience, Linux Gods 
 
 When I first started at IBM I knew how to alter Javascript and compile it. This is because of my many years playing Minecraft (yes I am a nerd). Now I have leveled up! I can understand and use Bash, Assembly, Python, Ruby and C! Writing full programs in any of these languages is a very difficult prospect but none the less achievable with what I know now. Whereas two weeks ago it would have been impossible. Working here even for a short time has been an amazing Learning experience for me, plus it looks great on a resume! Learning how to write C has been one of the most useful things I have learnt. I have already written programs for use both in and out of IBM. The first program I wrote was the standard newbie 'hello world' exercise. I have now expanded on that program so that it now says, "Hello world! This is Callum Scarvell". This is done using strings that recognise my name as a set character. Then I used a header file called conio.h or curses.h to recognise 'cal' as the short form of my name. This is so now I can abbreviate my name easier. Heres what the code looks like:
