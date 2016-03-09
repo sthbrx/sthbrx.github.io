@@ -44,3 +44,7 @@ DEFAULT_PAGINATION = 5
 
 # Uncomment following line if you want document-relative URLs when developing
 #RELATIVE_URLS = True
+
+# Don't summarise posts on the home page.
+# Replicates old Octopress behaviour.
+SUMMARY_MAX_LENGTH=None
