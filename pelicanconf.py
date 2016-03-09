@@ -40,7 +40,7 @@ SOCIAL = (('GitHub', 'https://github.com/sthbrx/sthbrx-blog'),
           ('reddit', 'https://www.reddit.com'),
           ('Twitter', 'http://twitter.com'),)
 
-DEFAULT_PAGINATION = 2
+DEFAULT_PAGINATION = 5
 
 # Uncomment following line if you want document-relative URLs when developing
 #RELATIVE_URLS = True
