@@ -1,6 +1,6 @@
 Title: Running ppc64le_hello on real hardware
 Date: 2015-06-03 12:16
-Category: OpenPower
+Category: OpenPOWER
 Tags: openpower, power, p8
 Authors: Daniel Axtens
 Slug: ppc64le-hello-on-real-hardware
