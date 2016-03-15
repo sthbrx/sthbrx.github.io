@@ -6,11 +6,11 @@ Tags: lca2016, conferences
 
 Recently most of us attended LCA2016. This is one set of reflections on what we heard and what we've thought since. (Hopefully not the only set of reflections that will be posted on this blog either!)
 
-LCA was 2 days of miniconferences plus 3 days of talks. Here, I've picked some of the more interesting talks I attended, and I've written down some thoughs. If you find the thoughts interesting, you can click through and watch the whole talk video, because LCA is awesome like that.
+LCA was 2 days of miniconferences plus 3 days of talks. Here, I've picked some of the more interesting talks I attended, and I've written down some thoughts. If you find the thoughts interesting, you can click through and watch the whole talk video, because LCA is awesome like that.
 
 #### Life is better with Rust's community automation
 
-[This talk](https://www.youtube.com/watch?v=dIageYT0Vgg) is probably the one that's had the biggest impact on our team so far. We were really impressed by the community automation that Rust has: the way they can respond to pull requests from new community memebers in a way that lets them keep their code quality high and be nice to everyone at the same time.
+[This talk](https://www.youtube.com/watch?v=dIageYT0Vgg) is probably the one that's had the biggest impact on our team so far. We were really impressed by the community automation that Rust has: the way they can respond to pull requests from new community members in a way that lets them keep their code quality high and be nice to everyone at the same time.
 
 The system that they've developed is fascinating (and seems fantastic). However, their system uses pull requests, while we use mailing lists. Pull requests are easy, because github has good hook support, but how do we link mailing lists to an automatic test system?
 
