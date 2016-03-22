@@ -47,3 +47,5 @@ DEFAULT_PAGINATION = 5
 # Don't summarise posts on the home page.
 # Replicates old Octopress behaviour.
 SUMMARY_MAX_LENGTH=None
+
+IGNORE_FILES = ['*WIP*']
