@@ -39,6 +39,9 @@ SOCIAL = (('GitHub', 'https://github.com/sthbrx/'),
           ('Skiboot mailing list', 'https://lists.ozlabs.org/listinfo/skiboot'),
 )
 
+SIDEBLOCK_TITLE = 'Disclaimer'
+SIDEBLOCK_CONTENT = "This blog represents the views of the individual authors, and doesn't necessarily represent IBM's positions, strategies or opinions."
+
 DEFAULT_PAGINATION = 5
 
 # Uncomment following line if you want document-relative URLs when developing
