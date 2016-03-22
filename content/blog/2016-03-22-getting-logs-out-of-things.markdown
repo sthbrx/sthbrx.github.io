@@ -46,7 +46,7 @@ Sometimes, not even `xmon` will help you. In production environments, you're not
 
 This is where the Flexible Service Processor, or FSP, comes in. The FSP is an IBM-developed baseboard management controller used on most IBM-branded Power Systems machines, and is responsible for a whole range of things, including monitoring system health. Among its many capabilities, the FSP can automatically take "system dumps" when fatal errors occur, capturing designated regions of memory for later debugging. System dumps can be configured and triggered via the FSP's web interface, which is beyond the scope of this post but is [documented](https://www.ibm.com/support/knowledgecenter/POWER8/p8ha5/mainstoragedump.htm?cp=POWER8%2F1-3-14-2) in IBM Power Systems user manuals.
 
-How does the FSP know what to capture? As it turns out, skiboot (the firmware which implements OPAL) maintains a [Memory Dump Store Table](https://github.com/open-power/skiboot/blob/master/hw/fsp/fsp-mdst-table.c) which tells the FSP which memory regions to dump. MDST updates are recorded in the OPAL log:
+How does the FSP know what to capture? As it turns out, skiboot (the firmware which implements OPAL) maintains a [Memory Dump Source Table](https://github.com/open-power/skiboot/blob/master/hw/fsp/fsp-mdst-table.c) which tells the FSP which memory regions to dump. MDST updates are recorded in the OPAL log:
 
     [2690088026,5] MDST: Max entries in MDST table : 256
     [2690090666,5] MDST: Addr = 0x31000000 [size : 0x100000 bytes] added to MDST table.
