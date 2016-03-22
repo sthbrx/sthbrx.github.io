@@ -15,12 +15,12 @@ TIMEZONE = 'Australia/Canberra'
 DEFAULT_LANG = u'en'
 
 # Feed generation is usually not desired when developing
-#FEED_DOMAIN = SITEURL
+FEED_DOMAIN = SITEURL
 FEED_ALL_ATOM = 'atom.xml'
 CATEGORY_FEED_ATOM = None
 TRANSLATION_FEED_ATOM = None
 AUTHOR_FEED_ATOM = None
-AUTHOR_FEED_RSS = None
+FEED_RSS = "rss.xml"
 
 # Blogroll
 LINKS = (('OzLabs', 'http://ozlabs.org'),)
