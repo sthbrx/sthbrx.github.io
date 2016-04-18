@@ -32,6 +32,7 @@ ARTICLE_URL = 'blog/{date:%Y}/{date:%m}/{date:%d}/{slug}/'
 ARTICLE_SAVE_AS = 'blog/{date:%Y}/{date:%m}/{date:%d}/{slug}/index.html'
 PAGE_URL = 'pages/{slug}/'
 PAGE_SAVE_AS = 'pages/{slug}/index.html'
+AUTHORS_SAVE_AS = 'authors.html'
 
 # Social widget
 SOCIAL = (('GitHub', 'https://github.com/sthbrx/'),
@@ -52,6 +53,3 @@ DEFAULT_PAGINATION = 5
 SUMMARY_MAX_LENGTH=None
 
 IGNORE_FILES = ['*WIP*']
-
-# Author page generation settings
-AUTHORS_SAVE_AS = 'authors.html'
