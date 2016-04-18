@@ -52,3 +52,6 @@ DEFAULT_PAGINATION = 5
 SUMMARY_MAX_LENGTH=None
 
 IGNORE_FILES = ['*WIP*']
+
+# Author page generation settings
+AUTHORS_SAVE_AS = 'authors.html'
