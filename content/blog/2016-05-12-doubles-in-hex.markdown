@@ -188,4 +188,4 @@ a double, 0xc00000001568fba0 =
 
 [00]: /images/surajjs/doubles_in_hex/double.png "https://en.wikipedia.org/wiki/Double-precision_floating-point_format"
 [01]: /images/surajjs/doubles_in_hex/formula.png "https://en.wikipedia.org/wiki/Double-precision_floating-point_format"
-[02]: /images/surajjs/doubles_in_hex/effective_address.png "https://www.kernel.org/doc/ols/2001/ppc64.pdf"
+[02]: /images/surajjs/doubles_in_hex/effective_address.png
