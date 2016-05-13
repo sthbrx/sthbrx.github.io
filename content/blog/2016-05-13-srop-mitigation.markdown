@@ -1,4 +1,4 @@
-Title: SROP Mitigation ~= -2
+Title: SROP Mitigation
 Date: 2016-05-12 22:22
 Authors: Rashmica Gupta
 Category: Education
