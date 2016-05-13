@@ -110,7 +110,7 @@ HPT gives us a *real* address (or the hardware memory address).
 
 The *effective* address space is divided into 5 regions:
 
-[02]
+![Effective Address Table][02]
 
 As you may notice, Kernel addresses begin with 0xc. This has the advantage that
 we can map a *virtual* address without the need for a table by simply
