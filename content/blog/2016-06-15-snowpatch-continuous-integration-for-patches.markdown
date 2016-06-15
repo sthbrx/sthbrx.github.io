@@ -1,0 +1,21 @@
+Title: Introducing snowpatch: continuous integration for patches
+Date: 2016-06-15 15:33
+Authors: Russell Currey
+Category: snowpatch
+Tags: snowpatch, development, tools
+
+Continuous integration has changed the way we develop software.  The ability to make a code change and be notified quickly and automatically whether or not it works allows for faster iteration and higher quality.  These processes and technologies allow products to quickly and consistently release new versions, driving continuous improvement to their users.  For a web app, it's all pretty simple: write some tests, someone makes a pull request, you build it and run the tests.  Tools like GitHub, Travis CI and Jenkins have made this process simple and efficient.
+
+Let's throw some spanners in the works.  What if instead of a desktop or web application, you're dealing with an operating system?  What if your tests can only be run when booted on physical hardware? What if instead of something like a GitHub pull request, code changes were sent as plain-text emails to a mailing list?  What if you didn't have control the development of this project, and you had to work with an existing, open community?
+
+These are some of the problems faced by the Linux kernel, and many other open source projects.  Mailing lists, along with tools like `git send-email`, have become core development infrastructure for many large open source projects.  The idea of sending code via a plain-text email is simple and well-defined, not reliant on a proprietary service, and uses universal, well-defined technology.  It does have shortcomings, though.  How do you take a plain-text patch, which was sent as an email to a mailing list, and accomplish the continuous integration possibilities other tools have trivially?
+
+Out of this problem birthed [snowpatch](https://github.com/ruscur/snowpatch), a continuous integration tool designed to enable these practices for projects that use mailing lists and plain-text patches.  By taking patch metadata organised by [Patchwork](https://patchwork.ozlabs.org), performing a number of `git` operations and shipping them off to [Jenkins](https://jenkins.io), snowpatch can enable continuous integration for any mailing list-based project.  At IBM [OzLabs](https://ozlabs.org), we're using snowpatch to automatically test new patches for [Linux on POWER](https://github.com/linuxppc/linux/), [skiboot](https://github.com/open-power/skiboot.git), snowpatch itself, and more.
+
+snowpatch is written in [Rust](https://rust-lang.org), an exciting new systems programming language with a focus on speed and safety.  Rust's amazing software ecosystem, enabled by its package manager [Cargo](https://crates.io), made development of snowpatch a breeze.  Using Rust has been a lot of fun, along with the practical benefits of (in our experience) faster development, and confidence in the runtime stability of our code.  It's still a young language, but it's quickly growing and has an amazing community that has always been happy to help.
+
+We still have a lot of ideas for snowpatch that haven't been implemented yet.  Once we've tested a patch and sent the results back to a patchwork instance, what if the project's maintainer (or a trusted contributor) could manually trigger some more intensive tests?  How would we handle it if the traffic on the mailing list of a project is too fast for us to test?  If we were running snowpatch on multiple machines on the same project, how would we avoid duplicating effort?  These are unsolved problems, and if you'd like to help us with these or anything else you think would be good for snowpatch, we take contributions and ideas via our mailing list, which you can subscribe to [here](https://lists.ozlabs.org/listinfo/snowpatch).  For more details, view our documentation on [GitHub](https://github.com/ruscur/snowpatch).
+
+Thanks for taking your time to learn a bit about snowpatch.  In future, we'll be talking about how we tie all these technologies together to build a continuous integration workflow for the Linux kernel and OpenPOWER firmware.  Watch this space!
+
+*This article was originally posted on [IBM developerWorks Open](https://developer.ibm.com/open/).  Check that out for more open source from IBM, and look out for more content in their [snowpatch](https://developer.ibm.com/open/snowpatch) section.*
