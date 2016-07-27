@@ -1,7 +1,7 @@
 Title: Kernel interfaces and vDSO test
 Date: 2016-06-24 16:30
 Authors: Cyril Bur
-Category: Kernel
+Category: Development
 Tags: kernel, asm, vdso
 
 ### Getting Suckered

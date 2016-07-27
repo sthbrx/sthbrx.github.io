@@ -1,8 +1,8 @@
 Title: A Taste of IBM
 Date: 2016-07-01 11:45
 Authors: Rohan McLure
-Tags: Education
-Category: work experience
+Tags: Education, work experience
+Category: Education
 
 As a hobbyist programmer and Linux user, I was pretty stoked to be able to experience real work in the IT field that interests me most, Linux. With a mainly disconnected understanding of computer hardware and software, I braced myself to entirely relearn everything and anything I thought I knew. Furthermore, I worried that my usefulness in a world of maintainers, developers and testers would not be enough to provide any real contribution to the company. In actual fact however, the employees at OzLabs (IBM ADL) put a really great effort into making use of my existing skills, were attentive to my current knowledge and just filled in the gaps! The knowledge they've given me is practical, interlinked with hardware and provided me with the foot-up that I'd been itching for to establish my own portfolio as a programmer. I was both honoured and astonished by their dedication to helping me make a truly meaningful contribution!
 

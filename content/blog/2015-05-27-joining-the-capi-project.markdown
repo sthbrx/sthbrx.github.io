@@ -2,7 +2,7 @@ Title: Joining the CAPI project
 Date: 2015-05-27 15:08
 Authors: Daniel Axtens
 Tags: capi, open-power
-Category: CAPI
+Category: OpenPOWER
 
 (I wrote this blog post a couple of months ago, but it's still quite relevant.)
 
