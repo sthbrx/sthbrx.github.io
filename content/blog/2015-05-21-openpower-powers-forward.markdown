@@ -2,7 +2,6 @@ Title: OpenPOWER Powers Forward
 Authors: Cyril Bur
 Date: 2015-05-21 11:29
 Category:  OpenPOWER
-Tags: open-power
 
 I wrote this blog post late last year, it is very relevant for this blog though so I'll repost it here.
 

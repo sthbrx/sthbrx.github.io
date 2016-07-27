@@ -2,7 +2,7 @@ Title: Where to Get a POWER8 Development VM
 Date: 2016-07-06 16:00
 Authors: Andrew Donnellan
 Category: OpenPOWER
-Tags: OpenPOWER, Development
+Tags: Development
 
 *POWER8 sounds great, but where the heck can I get a Power VM so I can test my code?*
 

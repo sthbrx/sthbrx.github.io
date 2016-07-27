@@ -2,7 +2,7 @@ Title: Getting logs out of things
 Authors: Andrew Donnellan
 Date: 2016-03-22 18:00
 Category: OpenPOWER
-Tags: debugging, skiboot, OPAL, FSP, kernel, development, OpenPOWER
+Tags: debugging, skiboot, OPAL, FSP, kernel, development
 
 Here at OzLabs, we have an unfortunate habit of making our shiny Power computers very sad, which is a common problem in systems programming and kernel hacking. When this happens, we like having logs. In particular, we like to have the kernel log and the OPAL firmware log, which are, very surprisingly, rather helpful when debugging kernel and firmware issues.
 

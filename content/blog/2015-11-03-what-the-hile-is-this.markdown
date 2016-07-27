@@ -2,7 +2,7 @@ Title: What the HILE is this?
 Date: 2015-11-03 15:02
 Authors: Samuel Mendoza-Jonas
 Category: Petitboot
-Tags: petitboot, power, p8, openpower, goodposts, autoboot, realcontent, kexec, kernel
+Tags: petitboot, p8, goodposts, autoboot, realcontent, kexec, kernel
 
 One of the cool features of POWER8 processors is the ability to run in either big- or little-endian mode. Several distros are already available in little-endian, but up until recently Petitboot has remained big-endian. While it has no effect on the OS, building Petitboot little-endian has its advantages, such as making support for vendor tools easier.
 So it should just be a matter of compiling Petitboot LE right? Well...

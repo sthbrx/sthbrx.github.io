@@ -2,7 +2,7 @@ Title: Petitboot Autoboot Changes
 Date: 2015-06-02 08:11
 Authors: Samuel Mendoza-Jonas
 Category: Petitboot
-Tags: petitboot, power, p8, openpower, goodposts, autoboot, realcontent
+Tags: petitboot, goodposts, autoboot, realcontent
 Slug: autoboot
 
 The way autoboot behaves in Petitboot has undergone some significant changes recently, so in order to ward off any angry emails lets take a quick tour of how the new system works.

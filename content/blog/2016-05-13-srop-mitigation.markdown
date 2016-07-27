@@ -2,7 +2,7 @@ Title: SROP Mitigation
 Date: 2016-05-13 22:22
 Authors: Rashmica Gupta
 Category: Development
-Tags: SROP, mitigation, powerpc, kernel
+Tags: SROP, mitigation, kernel
 
 ## What is SROP?
 

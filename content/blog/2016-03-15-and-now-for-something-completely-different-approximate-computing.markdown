@@ -2,7 +2,7 @@ Title: And now for something completely different: approximate computing
 Authors: Daniel Axtens
 Date: 2016-03-15 11:30
 Category: Education
-Tags: nicta, conferences
+Tags: conferences
 
 In early February I had the opportunity to go the the NICTA Systems Summer School, where Cyril and I were invited to represent IBM. There were a number of excellent talks across a huge range of systems related subjects, but the one that has stuck with me the most was a talk given by [Luis Ceze](http://homes.cs.washington.edu/~luisceze/)  on a topic called approximate computing. So here, in hopes that you too find it interesting, is a brief run-down on what I learned.
 

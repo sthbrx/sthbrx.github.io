@@ -2,7 +2,7 @@ Title: No Network For You
 Date: 2016-03-21 15:23
 Authors: Samuel Mendoza-Jonas
 Category: Petitboot
-Tags: petitboot, power, p8, openpower, goodposts, realcontent, ipmi, bmc, based16
+Tags: petitboot, goodposts, realcontent, ipmi, bmc, based16
 
 In POWER land [IPMI](https://en.wikipedia.org/wiki/Intelligent_Platform_Management_Interface) is mostly known as the method to access the machine's console and start interacting with Petitboot. However it also has a plethora of other features, handily described in the 600ish page [IPMI specification](http://www.intel.com/content/www/us/en/servers/ipmi/ipmi-second-gen-interface-spec-v2-rev1-1.html) (which you can go read yourself).
 

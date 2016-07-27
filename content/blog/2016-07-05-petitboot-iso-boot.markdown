@@ -2,7 +2,7 @@ Title: Optical Action at a Distance
 Date: 2016-07-05 15:23
 Authors: Samuel Mendoza-Jonas
 Category: Petitboot
-Tags: petitboot, power, p8, openpower, goodposts, realcontent, netboot, pxe
+Tags: petitboot, goodposts, realcontent, netboot, pxe
 
 Generally when someone wants to install a Linux distro they start with an ISO
 file. Now we could burn that to a DVD, walk into the server room, and put it in

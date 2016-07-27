@@ -2,7 +2,7 @@ Title: Tell Me About Petitboot
 Date: 2016-05-13 15:23
 Authors: Samuel Mendoza-Jonas
 Category: Petitboot
-Tags: petitboot, power, p8, openpower, goodposts, realcontent
+Tags: petitboot, goodposts, realcontent
 
 A Google search for 'Petitboot' brings up results from a number of places, some describing its use on [POWER servers](https://www.ibm.com/support/knowledgecenter/linuxonibm/liabp/liabppetitboot.htm), others talking about how to use it on the [PS3](http://jk.ozlabs.org/projects/petitboot/), in varying levels of detail. I tend to get a lot of general questions about Petitboot and its behaviour, and have had a few requests for a broad "Welcome to Petitboot" blog, suggesting that existing docs deal with more specific topics.. or that people just aren't reading them :)
 

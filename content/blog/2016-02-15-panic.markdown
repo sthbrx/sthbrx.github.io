@@ -4,7 +4,6 @@ Modified: 2016-02-15 14:23
 Authors: Russell Currey
 Category: OpenPOWER
 Slug: panic
-Tags: openpower
 
 This is a tale of a simple problem, with a relatively simple solution, that ended up being pretty complicated.
 

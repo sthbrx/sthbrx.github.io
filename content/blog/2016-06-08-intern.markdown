@@ -2,7 +2,7 @@ Title: Interning at Ozlabs
 Date: 2016-06-08 22:22
 Authors: Rashmica Gupta
 Category: Education
-Tags: intern, experience
+Tags: intern, work experience
  
 I am sadly coming to the end of my six(ish) month internship with Ozlabs (funded by [ACS](https://www.acs.org.au)). So here I am writing about my experience in the hopes that future prospective interns can read about how they should come and work with the previously dubbed Linux Gods.
 

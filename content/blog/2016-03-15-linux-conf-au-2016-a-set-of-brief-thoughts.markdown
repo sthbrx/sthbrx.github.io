@@ -2,7 +2,7 @@ Title: linux.conf.au 2016: A set of brief thoughts
 Authors: Daniel Axtens
 Date: 2016-03-15 11:30
 Category: Education
-Tags: lca2016, conferences
+Tags: conferences
 
 Recently most of us attended LCA2016. This is one set of reflections on what we heard and what we've thought since. (Hopefully not the only set of reflections that will be posted on this blog either!)
 
