@@ -2,7 +2,7 @@ Title: Get off my lawn: separating Docker workloads using cgroups
 Date: 2016-07-27 13:30
 Authors: Daniel Axtens
 Category: Docker
-Tags: cgroups, numa
+Tags: cgroups, numa, p8
 
 On my team, we do two different things in our Continuous Integration setup: build/functional tests, and performance tests. Build tests are simply testing whether a project builds, and if it provides a functional test suite, that the tests pass. We do a lot of MySQL/MariaDB testing this way. The other type of testing we do is performance tests: we build a project and then run a set of benchmarks against it. Python is a good example here.
 
@@ -50,7 +50,7 @@ root@0d3f339d4181:/# sysbench --test=cpu --num-threads=128 --max-requests=100000
 
 Now I've asked for 128 threads, but the cgroup only has CPUs/hwthreads 32-127 allocated. So If I run htop, I shouldn't see any load on CPUs 0-31. What do I actually see?
 
-![htop screenshot, showing load only on CPUs 32-127](images/dja/cgroup1.png)
+![htop screenshot, showing load only on CPUs 32-127](/images/dja/cgroup1.png)
 
 It works! Now, we create a cgroup for performance tests using the first socket and NUMA node:
 
@@ -71,7 +71,7 @@ root@b037049f94de:/# sysbench --test=cpu --num-threads=128 --max-requests=100000
 
 And the result?
 
-![htop screenshot, showing load only on CPUs 0-31](images/dja/cgroup2.png)
+![htop screenshot, showing load only on CPUs 0-31](/images/dja/cgroup2.png)
 
 It works! My benchmark results also suggest this is sufficient isolation, and the rest of the team is happy to have more build resources to play with.
 
