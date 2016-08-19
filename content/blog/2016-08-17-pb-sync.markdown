@@ -1,0 +1,47 @@
+Title: Getting In Sync
+Date: 2016-08-17 15:23
+Authors: Samuel Mendoza-Jonas
+Category: Petitboot
+Tags: skiroot, petitboot, goodposts, realcontent, devmapper, lvm, debug
+
+Since at least v1.0.0 Petitboot has used device-mapper snapshots to avoid
+mounting block devices directly. Primarily this is so Petitboot can mount disks
+and potentially perform filesystem recovery without worrying about messing it up
+and corrupting a host's boot partition - all changes happen to the snapshot in
+memory without affecting the actual device.
+
+This of course gets in the way if you actually _do_ want to make changes to a
+block device. Petitboot will allow certain bootloader scripts to make changes
+to disks if configured (eg, grubenv updates), but if you manually make changes
+you would need to know the special sequence of `dmsetup` commands to merge the
+snapshots back to disk. This is particulary annoying if you're trying to copy
+logs to a USB device!
+
+Depending on how recent a version of Petitboot you're running, there are two
+ways of making sure your changes persist:
+
+## Before v1.2.2
+
+If you really need to save changes from within Petitboot, the most
+straightforward way is to disable snapshots. Drop to the shell and enter
+```
+nvram --update-config petitboot,snapshots?=false
+reboot
+```
+
+Once you have rebooted you can remount the device as read-write and
+modify it as normal.
+
+## After v1.2.2
+
+To make this easier while keeping the benefit of snapshots, v1.2.2 introduces
+a new user-event that will merge snapshots on demand. For example:
+```
+mount -o remount,rw /var/petitboot/mnt/dev/sda2
+cp /var/log/messages /var/petitboot/mnt/dev/sda2/
+pb-event sync@sda2
+```
+
+After calling `pb-event sync@yourdevice`, Petitboot will remount the device back to
+read-only and merge the current snapshot differences back to disk. You can also
+run `pb-event sync@all` to sync all existing snapshots if desired.
