@@ -10,13 +10,17 @@ Install pelican (package: python[2|3]-pelican) for local testing.
 
 # Create a document:
 
-content/blog/{YYYY}-{MM}-{DD}-{meaningful title}.markdown
+Get up to date:
+
+git pull --recurse-submodules
+
+edit your document content/blog/{YYYY}-{MM}-{DD}-{meaningful title}.markdown
 
 add images to directory content/images/{meaningful title}/
 
 View:
 
-make html serve
+make html devserver
 
 Examine at http://localhost:8000/blog/{YYYY}/{MM}/{DD}/{meaningful title}/
 
