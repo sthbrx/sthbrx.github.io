@@ -1,7 +1,7 @@
 Title: Extracting Early Boot Messages in QEMU
 Date: 2017-01-30 16:47:00
 Authors: Suraj Jitindar Singh
-Category: Education, QEMU, Virtualisation
+Category: Virtualisation and Emulation
 Tags: QEMU, debug, virtualisation, kernel, dmesg, printk, boot, early, error
 
 Be me, you're a kernel hacker, you make some changes to your kernel, you boot
