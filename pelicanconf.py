@@ -25,7 +25,7 @@ FEED_RSS = "rss.xml"
 # Blogroll
 LINKS = (('OzLabs', 'http://ozlabs.org'),)
 
-THEME = "../pelican-octopress-theme"
+THEME = "./pelican-octopress-theme"
 
 ARTICLE_PATHS = ['blog']
 ARTICLE_URL = 'blog/{date:%Y}/{date:%m}/{date:%d}/{slug}/'
