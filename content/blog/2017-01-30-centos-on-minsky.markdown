@@ -133,7 +133,11 @@ During the install over VNC, there are a couple of consoles active. To switch be
 
 Using the VNC client program:
 
- 1. Select "Install Destination" - after selecting a device - select "Full disk summary and boot device" - select "Do not install boot loader" from device. ![Disabling install of boot loader](/images/centos7-minsky/anaconda-centos7-vnc-installation-destination-do-not-install-boot-loader.png) results in ![Result after disabling boot loader install](/images/centos7-minsky/anaconda-centos7-vnc-installation-destination-do-not-install-boot-loader-result.png).
+ 1. Select "Install Destination"
+ 1. Select a device from "Local Standard Disks"
+ 1. Select "Full disk summary and boot device"
+ 1. Select the device again from "Selected Disks" with the Boot enabled
+ 1. Select "Do not install boot loader" from device. ![Disabling install of boot loader](/images/centos7-minsky/anaconda-centos7-vnc-installation-destination-do-not-install-boot-loader.png) which results in ![Result after disabling boot loader install](/images/centos7-minsky/anaconda-centos7-vnc-installation-destination-do-not-install-boot-loader-result.png).
 
 Without disabling boot loader, the installer complains about `an invalid stage1 device`. I suspect it needs a manual Prep partition of 10M to make the installer happy.
 
