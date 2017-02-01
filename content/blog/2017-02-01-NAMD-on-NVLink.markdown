@@ -48,9 +48,9 @@ You need a c++ compiler:
 
 ## Building NAMD
 
-Once CUDA and the compilers are installed, building NAMD is reasonably straightforward. The one hitch is that because we're using CUDA 8.0, and the NAMD build scripts assume CUDA 7.5, we need to supply an updated [Linux-POWER.cuda file](images/namd/Linux-POWER.cuda). (We also enable code generation for the Pascal in this file.)
+Once CUDA and the compilers are installed, building NAMD is reasonably straightforward. The one hitch is that because we're using CUDA 8.0, and the NAMD build scripts assume CUDA 7.5, we need to supply an updated [Linux-POWER.cuda file](/images/namd/Linux-POWER.cuda). (We also enable code generation for the Pascal in this file.)
 
-We've documented the entire process as a script which you can [download](images/namd/install-namd.sh). We'd recommend executing the commands one by one, but if you're brave you can run the script directly.
+We've documented the entire process as a script which you can [download](/images/namd/install-namd.sh). We'd recommend executing the commands one by one, but if you're brave you can run the script directly.
 
 The script will fetch NAMD 2.12 and build it for you, but won't install it. It will look for the CUDA override file in the directory you are running the script from, and will automatically move it into the correct place so it is picked up by the build system..
 
@@ -77,8 +77,8 @@ This should be *significantly* faster than on non-NVLink machines - we saw a gai
 
 ## Downloads
 
- * [Install script for CentOS](images/namd/install-namd.sh)
- * [Linux-POWER.cuda file](images/namd/Linux-POWER.cuda)
+ * [Install script for CentOS](/images/namd/install-namd.sh)
+ * [Linux-POWER.cuda file](/images/namd/Linux-POWER.cuda)
 
 ## Other notes
 
