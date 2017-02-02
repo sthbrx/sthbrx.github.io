@@ -2,11 +2,11 @@ Title: Installing Centos 7.2 on IBM Power System's S822LC for High Performance C
 Date: 2017-01-30 08:54:33
 Authors: Daniel Black
 Category: OpenPOWER
-Tags: S822LC for hpc, hpc, centos, centos7, p8, bmc
+Tags: S822LC for hpc, hpc, centos, centos7, p8, bmc, RHEL
 
 ## Introduction
 
-If you are installing Linux on your IBM Power System's S822LC server then the instructions in this article will help you to start and run your system.  These instructions are specific to installing CentOS 7 on an IBM Power System S822LC for High Performance Computing (Minsky).
+If you are installing Linux on your IBM Power System's S822LC server then the instructions in this article will help you to start and run your system.  These instructions are specific to installing CentOS 7 on an IBM Power System S822LC for High Performance Computing (Minsky), but also work for RHEL 7 - just swap CentOS for RHEL.
 
 ### Prerequisites
 
@@ -89,7 +89,7 @@ ipmitool -I lanplus -H server_ip_address -U user-name -P ipmi_password ch
 
 ## Step 4: Creating a USB device and booting
 
-At this point, your IPMI console should be contain a Petitboot bootloader menu as illistrated below and you are ready to install Centos 7 on your server.
+At this point, your IPMI console should be contain a Petitboot bootloader menu as illustrated below and you are ready to install Centos 7 on your server.
 
 ![Petitboot menu over IPMI](/images/centos7-minsky/petitboot-centos7-usb-topmenu.png) 
 
@@ -103,7 +103,7 @@ Follow the following instructions:
  1. To create the bootable USB device, follow the instructions in the CentOS wiki [Host to Set Up a USB to Install CentOS](https://wiki.centos.org/HowTos/InstallFromUSBkey).
  1. Insert your bootable USB device into the front USB port. CentOS AltArch installer will automatically appear as a boot option on the Petitboot main screen. If the USB device does not appear select *Rescan devices*. If your device is not detected, you might have to try a different type.
  1. Arrow up to select the CentOS boot option. Press *e* (Edit) to open the Petitboot Option Editor window
- 1. Move the cursor to the Boot arguments section and to include the following information: `ro inst.stage2=hd:LABEL=CentOS_7_ppc64le:/ console=hvc0 ip=dhcp`
+ 1. Move the cursor to the Boot arguments section and to include the following information: `ro inst.stage2=hd:LABEL=CentOS_7_ppc64le:/ console=hvc0 ip=dhcp` (if using RHEL the LABEL will be similar to `RHEL-7.3\x20Server.ppc64le:/`)
 
 ![Petitboot edited "Install CentOS AltArch 7 (64-bit kernel)](/images/centos7-minsky/petitboot-centos7-usb-option-editor-menu.png)
 
