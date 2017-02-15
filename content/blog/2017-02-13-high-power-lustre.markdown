@@ -68,13 +68,13 @@ Building for ppc64le was reasonably straight-forward. I had one small issue
 
 Fixing this was as simple as a `yum install net-tools`.
 
-This was sufficient to build the kernel rpms. I installed them and booted to my patched kernel - so far so good!
+This was sufficient to build the kernel RPMs. I installed them and booted to my patched kernel - so far so good!
 
 # Building the client packages: CentOS
 
 I then tried to build and install the RPMs from `lustre-release`. This repository provides the client and utility RPMs.
 
-`./configure` and `make` succeeded, but when I went to install the packages with `rpm`, I found I aws missing some dependencies:
+`./configure` and `make` succeeded, but when I went to install the packages with `rpm`, I found I was missing some dependencies:
 
     error: Failed dependencies:
             ldiskfsprogs >= 1.42.7.wc1 is needed by kmod-lustre-osd-ldiskfs-2.9.52_60_g1d2fbad_dirty-1.el7.centos.ppc64le
@@ -118,13 +118,13 @@ My first step was to test whether another ppc64le machine would work as a client
 
 I tried with an existing Ubuntu 16.04 VM that I use for much of my day to day development.
 
-A quick google suggested that I could grab the `lustre-release` repository and run `make debs` to get debian packages for my system.
+A quick google suggested that I could grab the `lustre-release` repository and run `make debs` to get Debian packages for my system.
 
 I needed the following dependencies:
 
     sudo apt install module-assistant debhelper dpatch libsnmp-dev quilt
 
-With those the packages built sucessfully, and could be easily installed:
+With those the packages built successfully, and could be easily installed:
 
     dpkg -i lustre-client-modules-4.4.0-57-generic_2.9.52-60-g1d2fbad-dirty-1_ppc64el.deblustre-utils_2.9.52-60-g1d2fbad-dirty-1_ppc64el.deb
 
@@ -132,7 +132,7 @@ I tried to connect to the server:
 
     sudo mount -t lustre $SERVER_IP@tcp:/lustre /lustre/
 
-Initially I wasn't able to connect to the server at all. I remembered that (unlike Ubuntu), CentOS comes with quite an agressive firewall by default. I ran the following on the server:
+Initially I wasn't able to connect to the server at all. I remembered that (unlike Ubuntu), CentOS comes with quite an aggressive firewall by default. I ran the following on the server:
 
     systemctl stop firewalld
 
@@ -147,7 +147,7 @@ This did not go well - I got the following error:
     liblustreapi.c: In function ‘llapi_get_poollist’:
     liblustreapi.c:1201:3: error: ‘readdir_r’ is deprecated [-Werror=deprecated-declarations]
 
-This looks like one of the new errors intruduced in recent GCC versions: I found the following stanza in a `lustre/autoconf/lustre-core.m4`, and removed the `-Werror`:
+This looks like one of the new errors introduced in recent GCC versions: I found the following stanza in a `lustre/autoconf/lustre-core.m4`, and removed the `-Werror`:
 
     AS_IF([test $target_cpu == "i686" -o $target_cpu == "x86_64"],
             [CFLAGS="$CFLAGS -Wall -Werror"])
@@ -159,7 +159,7 @@ Even this wasn't enough: I got the following errors:
 	                  ^~~~~~~~~~~
     /home/dja/dev/lustre-release/debian/tmp/modules-deb/usr_src/modules/lustre/lustre/llite/dcache.c:387:22: note: (near initialization for ‘ll_d_ops.d_compare’)
 
-I figured this was probably because Ubuntu 16.10 has a 4.8 kernel, and Ubutu 16.04 has a 4.4 kernel. Sure enough, when I fired up a 16.04 x86_64 VM with a 4.4 kernel, I was able to build an install fine.
+I figured this was probably because Ubuntu 16.10 has a 4.8 kernel, and Ubuntu 16.04 has a 4.4 kernel. Sure enough, when I fired up a 16.04 x86_64 VM with a 4.4 kernel, I was able to build an install fine.
 
 Connecting didn't work first time - the guest failed to mount, but I did get the following helpful error on the server:
 
