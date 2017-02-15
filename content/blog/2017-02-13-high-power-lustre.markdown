@@ -20,8 +20,6 @@ I first tried to grab the recommended source RPM - but had some issues with the 
     Retrieving http://vault.centos.org/7.3.1611/updates/Source/SPackages/kernel-3.10.0-514.2.2.el7.src.rpm
     curl: (22) The requested URL returned error: 404 Not Found
 
-It seems the package had temporarily vanished from the mirrors: it's now back.
-
 ### A brief diversion
 
 While waiting for the package to return, I briefly attempted to use an older CentOS 7.2 kernel: 3.10.0-327.36.3
