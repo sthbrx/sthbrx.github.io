@@ -16,8 +16,8 @@ Lustre normally requires a patched 'enterprise' kernel - normally an old RHEL, C
 
 I first tried to grab the recommended source RPM - but had some issues with the package giving us a 404.
 
-    [build@dja-centos-guest kernel]$ rpm -ivh http://vault.centos.org/7.3.1611/updates/Source/SPackages/kernel-3.10.0-514.2.2.el7.src.rpm
-    Retrieving http://vault.centos.org/7.3.1611/updates/Source/SPackages/kernel-3.10.0-514.2.2.el7.src.rpm
+    [build@dja-centos-guest kernel]$ rpm -ivh http://vault.centos.org/7.3.1611/updates/Source/SPackages/kernel-3.10.0-514.6.1.el7.src.rpm
+    Retrieving http://vault.centos.org/7.3.1611/updates/Source/SPackages/kernel-3.10.0-514.6.1.el7.src.rpm
     curl: (22) The requested URL returned error: 404 Not Found
 
 It seems the package had temporarily vanished from the mirrors: it's now back.
