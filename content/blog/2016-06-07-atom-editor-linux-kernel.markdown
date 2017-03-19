@@ -10,7 +10,7 @@ And so Atom comes along.  Unlike other shiny new text editors to emerge in the p
 
 Like the curious person I am, I'm always trying out new things to see if they're any good.  I'm not particularly tied to any editor; I prefer modal editing, but I'm no vim wizard.  I eventually settled on using Emacs with evil-mode (which I assumed would make both Emacs and vim people like me, but the opposite happened), which was decent.  It was configurable, it was good, but it had issues.
 
-![The Atom editor](http://i.imgur.com/36lOiMT.png)
+![The Atom editor](/images/ruscur/36lOiMT.png)
 
 So, let's have a look at how Atom stacks up for low-level work.  First of all, it's X only.  You wouldn't use it to change one line of a file in /etc/, and a lot of kernel developers only edit code inside a terminal emulator.  Most vim people do this since gvim is a bit wonky, and Emacs people can double-dip; using Emacs without X for small things and Emacs with X for programming.  You don't want to do that with Atom, if nothing else because of its slow startup time.
 
@@ -18,19 +18,19 @@ Now let's look at configurability.  In my opinion, no editor will ever match the
 
 Okay, package management.  Atom is the clear winner here.  The package repository is very easy to use, for users and developers.  I wrote my own package, typed `apm publish` and within a minute a friend could install it.  For kernel development though, you don't really need to install anything, Atom is pretty batteries-included.  This includes good syntax highlighting, ctags support, and a few themes.  In this respect, Atom feels like an editor that was created this century.
 
-![Atom's inbuilt package management](https://i.imgur.com/DAx7GqD.png)
+![Atom's inbuilt package management](/images/ruscur/DAx7GqD.png)
 
 What about actually editing text?  Well, I only use modal editing, and Atom is very far from being the best vim.  I think evil-mode in Emacs is the best vim, followed closely by vim itself.  Atom has a vim-mode, and it's fine for insert/normal/visual mode, but anything involving a : is a no-go.  There's a plugin that's entirely useless.  If I tried to do a replacement with :s, Atom would lock up *and* fail to replace the text.  vim replaced thousands of occurrences with in a second.  Other than that, Atom's pretty good.  I can move around pretty much just as well as I could in vim or Emacs, but not quite.  Also, it support ligatures!  The first kernel-usable editor that does.
 
 Autocompletions feel very good in Atom.  It completes within a local scope automatically, without any knowledge of the type of file you're working on.  As far as intelligence goes, Atom's support for tags outside of ctags is very lacking, and ctags is stupid.  Go-to definition *sometimes* works, but it lags when dealing with something as big as the Linux kernel.  Return-from definition is very good, though.  Another downside is that it can complete from any open buffer, which is a huge problem if you're writing Rust in one tab and C in the other.
 
-![Atom's fuzzy file matching is pretty good](http://i.imgur.com/0PRiIUS.png)
+![Atom's fuzzy file matching is pretty good](/images/ruscur/0PRiIUS.png)
 
 An experience I've had with Atom that I haven't had with other editors is actually writing a plugin.  It was really easy, mostly because I stole a lot of it from an existing plugin, but it was easy.  I wrote a syntax highlighting package for POWER assembly, which was much more fighting with regular expressions than it was fighting with anything in Atom.  Once I had it working, it was very easy to publish; just push to GitHub and run a command.
 
 Sometimes, Atom can get too clever for its own good.  For some completely insane reason, it automatically "fixes" whitespace in every file you open, leading to a huge amount of git changes you didn't intend.  That's easy to disable, but I don't want my editor doing that, it'd be much better if it highlighted whitespace it didn't like by default, like you can get vim and Emacs to do.  For an editor designed around git, I can't comprehend that decision.
 
-![Atom can also fuzzy match its commands](https://i.imgur.com/arbWXHx.png)
+![Atom can also fuzzy match its commands](/images/ruscur/arbWXHx.png)
 
 Speaking of git, the editor pretty much has everything you'd expect for an editor written at GitHub.  The sidebar shows you what lines you've added, removed and modified, and the gutter shows you what branch you're on and how much you've changed all-up.  There's no in-built support for doing git things inside the editor, but there's a package for it.  It's pretty nice to get something "for free" that you'd have to tinker with in other editors.
 
