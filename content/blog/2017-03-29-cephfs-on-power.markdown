@@ -1,5 +1,5 @@
 Title: Evaluating CephFS on Power
-Date: 2017-03-22
+Date: 2017-03-29
 Authors: Alastair D'Silva
 Category: Development
 Tags: ceph, raid, storage
@@ -19,7 +19,8 @@ Finally, we will use the ceph-deploy to deploy the instance. We will ceph-deploy
 via pip, to avoid file conflicts with the packages that we built.
 
 For more information on what each command does, visit the following tutorial,
-upon which which this is based: http://palmerville.github.io/2016/04/30/single-node-ceph-install.html
+upon which which this is based:
+[http://palmerville.github.io/2016/04/30/single-node-ceph-install.html](http://palmerville.github.io/2016/04/30/single-node-ceph-install.html)
 
 ### Virtual Machine Config
 
@@ -44,7 +45,7 @@ Create a virtual machine with at least the following:
 ```
 
 ### Build Ceph
- - Clone the Ceph repo by following the instructions here: http://docs.ceph.com/docs/master/install/clone-source/
+ - Clone the Ceph repo by following the instructions here: [http://docs.ceph.com/docs/master/install/clone-source/](http://docs.ceph.com/docs/master/install/clone-source/)
 ```
     mkdir $HOME/src
     cd $HOME/src
@@ -65,7 +66,7 @@ Create a virtual machine with at least the following:
     sudo apt install python-requests python-flask resource-agents curl python-cherrypy python3-pip python-django python-dateutil python-djangorestframework
     sudo pip3 install ceph-deploy
 ```
- - Build the packages as per the instructions: http://docs.ceph.com/docs/master/install/build-ceph/
+ - Build the packages as per the instructions: [http://docs.ceph.com/docs/master/install/build-ceph/](http://docs.ceph.com/docs/master/install/build-ceph/)
 ```
     cd $HOME/src/ceph
     sudo dpkg-buildpackage -J$(nproc) # This will take a couple of hours (16 cpus)
@@ -123,6 +124,6 @@ Create a virtual machine with at least the following:
 
 ## References
 
-1. http://docs.ceph.com/docs/master/install/clone-source/
-2. http://docs.ceph.com/docs/master/install/build-ceph/
-3. http://palmerville.github.io/2016/04/30/single-node-ceph-install.html
+1. [http://docs.ceph.com/docs/master/install/clone-source/](http://docs.ceph.com/docs/master/install/clone-source/)
+2. [http://docs.ceph.com/docs/master/install/build-ceph/](http://docs.ceph.com/docs/master/install/build-ceph/)
+3. [http://palmerville.github.io/2016/04/30/single-node-ceph-install.html](http://palmerville.github.io/2016/04/30/single-node-ceph-install.html)
