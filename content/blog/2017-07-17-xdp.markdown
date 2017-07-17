@@ -1,0 +1,143 @@
+Title: XDP on Power
+Date: 2017-07-17 10:08:00
+Authors: Daniel Axtens
+Category: Development
+Tags: xdp, power, networking, remoteposts
+
+This post is a bit of a break from the standard IBM fare of this blog,
+as I now work for Canonical. But I have a soft spot for Power from my
+time at IBM - and Canonical officially supports 64-bit, little-endian
+Power - so when I get a spare moment I try to make sure that cool,
+officially-supported technologies work on Power _before_ we end up
+with a customer emergency! So, without further ado, this is the story
+of XDP on Power.
+
+## XDP
+
+eXpress Data Path (XDP) is a cool Linux technology to allow really
+fast processing of network packets.
+
+Normally in Linux, a packet is received by the network card, an SKB
+([socket buffer](http://vger.kernel.org/~davem/skb.html)) is
+allocated, and the packet is passed up through the networking stack.
+
+This introduces an inescapable latency penalty: we have to allocate
+some memory and copy stuff around. XDP allows some network cards and
+drivers to process packets early - even before the allocation of the
+SKB. This is much faster, and so has applications in DDOS mitigation
+and other high-speed networking use-cases. The IOVisor project has
+[much more information](https://www.iovisor.org/technology/xdp) if you
+want to learn more.
+
+## eBPF
+
+XDP processing is done by an eBPF program. eBPF - the extended
+Berkeley Packet Filter - is an in-kernel virtual machine with a
+limited set of instructions. The kernel can statically validate eBPF
+programs to ensure that they terminate and are memory safe. From this
+it follows that the programs cannot be Turing-complete: they do not
+have backward branches, so they cannot do fancy things like
+loops. Nonetheless, they're surprisingly powerful for packet
+processing and tracing. eBPF programs are translated into efficient
+machine code using in-kernel JIT compilers on many platforms, and
+interpreted on platforms that do not have a JIT. (Yes, there are
+multiple JIT implementations in the kernel. I find this a terrifying
+thought.)
+
+Rather than requiring people to write raw eBPF programs, you can write
+them in a somewhat-restricted subset of C, and use Clang's eBPF target
+to translate them. This is super handy, as it gives you access to the
+kernel headers - which define a number of useful data structures like
+headers for various network protocols.
+
+## Trying it
+
+There are a few really interesting project that are already up and
+running that allow you to explore XDP without learning the innards of
+both eBPF and the kernel networking stack. I explored the samples in
+the [bcc compiler collection](https://github.com/iovisor/bcc) and also
+the samples from the [netoptimizer/prototype-kernel repository](https://github.com/netoptimizer/prototype-kernel/).
+
+The easiest way to get started with these is with a virtual machine,
+as recent virtio network drivers support XDP. If you are using Ubuntu,
+you can use the [uvt-kvm
+tooling](https://help.ubuntu.com/lts/serverguide/cloud-images-and-uvtool.html)
+to trivially set up a VM running Ubuntu Zesty on your local machine.
+
+Once your VM is installed, you need to shut it down and edit the virsh XML. 
+
+You need 2 vCPUs (or more) and a virtio+vhost network card. You also
+need to edit the 'interface' section and add the following snippet
+(with thanks to the [xdp-newbies
+list](https://www.spinics.net/lists/xdp-newbies/msg00029.html)):
+
+    <driver name='vhost' queues='4'>
+        <host tso4='off' tso6='off' ecn='off' ufo='off'/>
+        <guest tso4='off' tso6='off' ecn='off' ufo='off'/>
+    </driver>
+
+(If you have more than 2 vCPUs, set the queues parameter to 2x the
+number of vCPUs.)
+
+Then, install a modern clang (we've had issues with 3.8 - I recommend
+v4+), and the usual build tools.
+
+I recommend testing with the prototype-kernel tools - the DDOS
+prevention tool is a good demo. Then - on x86 - you just follow their
+instructions. I'm not going to repeat that here.
+
+## POWERful XDP
+
+What happens when you try this on Power? Regular readers of my posts
+will know to expect some
+[minor](https://sthbrx.github.io/blog/2017/02/13/high-power-lustre/)
+[hitches](https://sthbrx.github.io/blog/2017/02/01/namd-on-nvlink/).
+
+XDP does not disappoint.
+
+Firstly, the prototype-kernel repository [hard codes x86](https://github.com/netoptimizer/prototype-kernel/blob/master/kernel/samples/bpf/Makefile#L92)
+as the architecture for kernel headers. You need to change it for
+powerpc.
+
+Then, once you get the stuff compiled, and try to run it on a
+current-at-time-of-writing Zesty kernel, you'll hit a massive debug
+splat ending in:
+
+    32: (61) r1 = *(u32 *)(r8 +12)
+    misaligned packet access off 0+18+12 size 4
+    load_bpf_file: Permission denied
+
+It turns out this is because in Ubuntu's Zesty kernel,
+CONFIG_HAS_EFFICIENT_UNALIGNED_ACCESS is not set on ppc64el. Because
+of that, the eBPF verifier will check that all loads are aligned - and
+this load (part of checking some packet header) is not, and so the
+verifier rejects the program. Unaligned access is not enabled because
+the Zesty kernel is being compiled for CPU_POWER7 instead of
+CPU_POWER8, and we don't have efficient unaligned access on POWER7.
+
+As it turns out, IBM never released any officially supported Power7 LE
+systems - LE was only ever supported on Power8. So, I [filed a bug](https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1699627) and
+[sent a patch](https://lists.ubuntu.com/archives/kernel-team/2017-June/085074.html)
+to build Zesty kernels for POWER8 instead, and that has been accepted
+and will be part of the next stable update due real soon now.
+
+Sure enough, if you install a kernel with that config change, you can
+verify the XDP program and load it into the kernel!
+
+If you have real powerpc hardware, that's enough to use XDP on Power!
+Thanks to [Michael Ellerman](http://michael.ellerman.id.au/),
+maintainer extraordinaire, for verifying this for me.
+
+If - like me - you don't have ready access to Power hardware, you're
+stuffed. You can't use qemu in TCG mode: to use XDP with a VM, you
+need multi-queue support, which only exists in the vhost driver, which
+is only available for KVM guests. Maybe IBM should release a developer
+workstation. (Hint, hint!)
+
+Overall, I was pleasantly surprised by how easy things were for people
+with real ppc hardware - it's encouraging to see something not require
+kernel changes!
+
+eBPF and XDP are definitely growing technologies - as [Brendan Gregg notes](https://twitter.com/brendangregg/status/866078955530444800),
+now is a good time to learn them! (And those on Power have no excuse
+either!)
