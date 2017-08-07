@@ -1,7 +1,7 @@
 Title: A tale of two Dockers
 Date: 2015-10-12 14:14
 Category: Docker 
-Tags: php, peformance
+Tags: php, performance
 Authors: Daniel Axtens
 
 (This was published in an internal technical journal last week, and is now being published here. If you already know what Docker is, feel free to skim the first half.)
