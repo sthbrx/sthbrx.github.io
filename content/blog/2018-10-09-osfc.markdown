@@ -1,0 +1,30 @@
+Title: Open Source Firmware Conference 2018
+Date: 2018-10-09 10:08:00
+Authors: Samuel Mendoza-Jonas
+Category: Petitboot
+Tags: linux, firmware, security, goodposts, realcontent, sparseposting, openpower, openbmc, easyposts, linuxboot, google, intel, osfc, shortposts, facebook
+
+I recently had the pleasure of attending the [2018 Open Source Firmware Conference](https://osfc.io) in Erlangen, Germany. Compared to other more general conferences I've attended in the past, the laser focus of OSFC on firmware and especially firmware security was fascinating. Seeing developers from across the world coming together to discuss how they are improving their corner of the stack was great, and I've walked away with plenty of new knowledge and ideas (and several kilos of German food and drink..).
+
+-----
+
+What was especially exciting though is that I had the chance to talk about my work on [Petitboot](https://github.com/open-power/petitboot) and what's happened from the POWER8 launch until now. If you're interested in that, or seeing how I talk after 36 hours of travel, check it out here:
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/8Z1vEinNU7I" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+-----
+
+OSFC have made all the talks from the first two days available in a [playlist on Youtube](https://www.youtube.com/playlist?list=PLJ4u8GLmFVmoRCX_gFXV6fhWmsOQ5cmuj)  
+If you're after a few suggestions there was, in no particular order:
+
+[Ryan O'Leary giving an update on Linuxboot](https://www.youtube.com/watch?v=ZjAu0VYRTno) - also known as NERF, Google's approach to a Linux bootloader all written in Go.
+
+[Subrate Banik talking about porting Coreboot on top of Intel's FSP](https://www.youtube.com/watch?v=qUgo-AVsSC)
+
+[Ron Minnich describing his work with "rompayloads" on Coreboot](https://www.youtube.com/watch?v=ukSh1n7wjSA)
+
+[Vadmin Bendebury describing Google's "Secure Microcontroller" Chip](https://www.youtube.com/watch?v=gC-lbMNmIsg)
+
+[Facebook presenting their use of Linuxboot and "systemboot"](https://www.youtube.com/watch?v=eKVSBESoKUc)
+
+And heaps more, check out the full playlist!
