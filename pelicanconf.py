@@ -9,6 +9,7 @@ SITESUBTITLE = 'A Power Technical Blog'
 DISQUS_SITENAME = 'sthbrx'
 
 PATH = 'content'
+STATIC_PATHS = ['images', 'misc']
 
 TIMEZONE = 'Australia/Canberra'
 
