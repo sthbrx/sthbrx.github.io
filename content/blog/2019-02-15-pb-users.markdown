@@ -1,0 +1,67 @@
+Title: What Do You Mean "No"?
+Date: 2019-02-25 16:47:00
+Authors: Samuel Mendoza-Jonas
+Category: Petitboot
+Tags: linux, firmware, goodposts, realcontent, sparseposting, openpower, petitboot, security
+
+Quite often when building small Linux images having separate user accounts isn't always at the top of the list of things to include. Petitboot is no different; the most common operations like mounting disks, configuring interfaces, and calling `kexec` all require root and Petitboot generally only exists long enough to boot into the next thing, so why not run it all as root?
+
+The picture is less clear when we start to think about what is possible to do in Petitboot by default. If someone comes across an open Petitboot console they're only a few keystrokes away from wiping disks, changing files, or even flashing firmware. Depending on how your system is used that may or may not be something you care about, but over time there have been a few requests to "add a password screen to Petitboot" to at least make it so that the system isn't open season for whoever sees it.
+
+## Enter Password:
+
+The most direct way to avoid this would be to slap a password prompt onto Petitboot before any changes can be made. There are two immediate drawbacks to this:
+
+- The Petitboot UI still runs as root, and
+- Exiting to the shell gives the user root permissions as well.
+
+There is already a [mechanism](https://github.com/open-power/petitboot/commit/f5dab0206a3baca73895a587583ddfa402f8f569) to prevent the user exiting to the shell, but this puts all of our eggs in the basket of petitboot-nc being a secure program. If a user can accidentally or otherwise find a way to exit or crash the UI then they're immediately in a root shell, and while petitboot-nc is a good UI it was never designed to be a hardened program protecting the system.
+
+## You Have No Power Here
+
+The idea instead as of Petitboot v1.10.0 is not to care if the user drops to the shell; because now it's completely unprivileged.
+
+![Normal shell][00]
+
+The only process now that runs as root is pb-discover itself; the console, UI, and helper scripts run as a new 'petituser'. For the server and clients to still communicate the "petitiboot.ui" socket permissions are modified to allow processes that are part of the 'petitgroup' to connect. However now if pb-discover notices that a client in the petitgroup is connecting  (or more accurately the client isn't running as root) by default it ignores any commands from it that would configure or boot the system.
+
+A new command, `PB_PROTOCOL_ACTION_AUTHENTICATE`, lets a client send a password to the server to then be allowed to send all the usual commands like updating the config or booting a specific option. This keeps all the authentication on the server side, avoiding writing any "secure" ncurses code. In the UI the biggest difference is that when trying to change something the user will hit a password field:
+
+![Denied][01]
+
+Then the password is sent to the server, checked, and if correct the action goes ahead.
+
+## Whose Passwords?
+
+But where does this password come from? Technically it's just the root password. The server computes a hash of the supplied password and compares it against the system's root password. Similarly in the shell the user can run `sudo` with the root password to enter a full shell if needed:
+
+
+![Oops][02]
+
+Petitboot of course runs in memory, and writing a root password into the image itself would mean recompiling to change the password, so instead Petitboot pulls the root password from NVRAM. On startup Petitboot reads the `petitboot,password` parameter which is the _hash_ of the root password and updates `/etc/shadow` with it. This happens before any clients are up or can connect to the server.
+
+## Don't Panic
+
+By default no password is set. After all we don't want people upgrading and then being somehow locked out of their system. For ease of use, and for testing-purposes, if no password is configured and the user drops to the shell it is automatically upgraded to a root shell:
+
+![Elevated][03]
+
+To set a password there is a new subscreen in System Configuration:
+
+![New Password][04]
+
+This sends an authentication command to the server, and assuming the client is authenticated with the current password as well pb-discover updates the shadow file, and writes the hash back to NVRAM.
+
+-------------------------------------------
+
+User support exists in Petitboot v1.10.0 onwards. You will also need some support in your build system to set up the users, see how [op-build did it for an example](https://github.com/open-power/op-build/commit/7b5f1efbee6ace9d4ee80640875aa3ad57e95c69).
+
+There are a few items on the TODO list still which would be good to have. For example storing the password hash in an attached TPM if available, as well as splitting out more of what runs as root; for example the bootloader parsers in pb-discover preferably wouldn't run with root privileges, but they are all part of the one binary.
+
+As always, comments, suggestions, and patches welcome on the [list](https://lists.ozlabs.org/listinfo/petitboot)!
+
+[00]: /images/sammj/users-reboot.png
+[01]: /images/sammj/users-denied.png
+[02]: /images/sammj/users-dd-random.png
+[03]: /images/sammj/users-elevated.png
+[04]: /images/sammj/users-new-password.png
