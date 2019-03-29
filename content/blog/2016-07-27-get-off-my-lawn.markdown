@@ -1,7 +1,7 @@
 Title: Get off my lawn: separating Docker workloads using cgroups
 Date: 2016-07-27 13:30
 Authors: Daniel Axtens
-Category: Docker
+Category: Performance
 Tags: cgroups, numa, p8
 
 On my team, we do two different things in our Continuous Integration setup: build/functional tests, and performance tests. Build tests simply test whether a project builds, and, if the project provides a functional test suite, that the tests pass. We do a lot of MySQL/MariaDB testing this way. The other type of testing we do is performance tests: we build a project and then run a set of benchmarks against it. Python is a good example here.
