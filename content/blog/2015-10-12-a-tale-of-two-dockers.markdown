@@ -1,6 +1,6 @@
 Title: A tale of two Dockers
 Date: 2015-10-12 14:14
-Category: Docker 
+Category: Development
 Tags: php, performance
 Authors: Daniel Axtens
 

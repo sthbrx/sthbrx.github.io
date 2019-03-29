@@ -2,7 +2,7 @@ Title: Docker: Just Stop Using AUFS
 Date: 2015-10-30 13:30
 Authors: Daniel Axtens
 Tags: aufs, overlay, performance
-Category: Docker
+Category: Performance
 
 Docker's default storage driver on most Ubuntu installs is AUFS.
 
