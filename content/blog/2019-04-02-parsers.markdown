@@ -53,7 +53,7 @@ However, for our current set of programs and use cases, this is probably not tra
 ## The rest of the paper
 The rest of the paper is reasonably interesting. Their general theory is that you should build your parsers based on a formal definition of a language, and that the parser should convert the input data to a set of objects, and then your business logic should deal with those objects. This is the 'recognizer pattern', and is illustrated below:
 
-![The recognizer pattern: separate code parses input according to a formal grammar, creating valid objects that are passed to the business logic](images/dja/recogniser.png)
+![The recognizer pattern: separate code parses input according to a formal grammar, creating valid objects that are passed to the business logic](/images/dja/recogniser.png)
 
 In short, the article is full of great ideas if you happen to be parsing a simple language, or are designing not just a parser but a full language ecosystem. They do also provide a binary parser toolkit that might be helpful if you are parsing a binary format that can be expressed with a parser combinator.
 
