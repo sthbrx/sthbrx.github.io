@@ -6,7 +6,9 @@ git clone --recurse-submodules git@github.com:sthbrx/sthbrx-blog.git
 
 if you already have this cloned, git submodule update
 
-Install pelican (package: python[2|3]-pelican) for local testing.
+Install pelican (package: python[2|3]-pelican) for local testing, as well
+as markdown support for Python (either "pip install markdown" or a package
+from your distro).
 
 # Create a document:
 
