@@ -12,7 +12,7 @@ After that I switched to [Doom Emacs](https://github.com/hlissner/doom-emacs), w
 
 Anyway, since 2016 when I used Atom, Visual Studio Code (henceforth referred to as Code) came along and ate its lunch, using the framework (Electron) that was created for Atom.  I did try it years ago, but I was very turned off by its Microsoft-ness, it seeming lack of distinguishing features from Atom, and it didn't feel like a native editor at all.  Since it's massively grown in popularity since then, I decided I'd give it a try.
 
-![Visual Studio Code](images/ruscur/vscode.png)
+![Visual Studio Code](/images/ruscur/vscode.png)
 
 ### Vim emulation
 
@@ -34,7 +34,7 @@ The first thing I did was check out the [vscode-linux-kernel](https://github.com
 
 Code has good built-in git support, so actions like staging files for a commit can be done from within the editor.  Ctrl-P lets you quickly navigate to any file with fuzzy-matching (which is impressively fast for a project of this size), and Ctrl-Shift-P will let you search commands, which I've been using for some git stuff.
 
-![git command completion in Code](images/ruscur/vscode-git.png)
+![git command completion in Code](/images/ruscur/vscode-git.png)
 
 There are some rough edges, though.  Code is set on what so many modern editors are set on, which is the "one window per project" concept - so to get things working the way you want, you would open your kernel source as the current project.  This makes it a pain to just open something else to edit, like some script, or checking the value of something in firmware, or chucking something in your bashrc.
 
