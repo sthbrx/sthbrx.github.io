@@ -50,4 +50,4 @@ Not the most important feature, but I do like not having to alt-tab out and lose
 
 ### Well...is it good?
 
-Yeah, it is.  It has shortcomings, but installing Code and using the repo above to get started is probably the simplest way to get a competent kernel development going, with more features than most kernel developers (probably) have in their editors.  Code is open source and so are its extensions, and it'd be the first thing I recommend to new developers who aren't already super invested into vim or Emacs, and it's worth a try if you have gripes with your current environment.
+Yeah, it is.  It has shortcomings, but installing Code and using the repo above to get started is probably the simplest way to get a competent kernel development environment going, with more features than most kernel developers (probably) have in their editors.  Code is open source and so are its extensions, and it'd be the first thing I recommend to new developers who aren't already super invested into vim or Emacs, and it's worth a try if you have gripes with your current environment.
