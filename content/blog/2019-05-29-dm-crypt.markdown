@@ -1,0 +1,27 @@
+Title: dm-crypt: Password Prompts Proliferate
+Date: 2019-05-29 16:47:00
+Authors: Samuel Mendoza-Jonas
+Category: Petitboot
+Tags: linux, firmware, goodposts, realcontent, sparseposting, openpower, petitboot, security
+
+[Just recently](https://sthbrx.github.io/blog/2019/02/25/what-do-you-mean-no/) Petitboot added a method to ask the user for a password before allowing certain actions to proceed. Underneath the covers this is checking against the root password, but the UI "pop-up" asking for the password is relatively generic. Something else which has been on the to-do list for a while is support for mounting encrpyted partitions, but there wasn't a good way to retrieve the password for them - until now!
+
+With the password problem solved, there isn't too much else to do. If Petitboot sees an encrypted partition it makes a note of it and informs the UI via the `device_add` interface. Seeing this the UI shows this device in the UI even though there aren't any boot options associated with it yet:
+
+![encrypted_hdr][00]
+
+Unlike normal devices in the menu these are selectable; once that happens the user is prompted for the password:
+
+![encrypted_password][01]
+
+With password in hand pb-discover will then try to open the device with `cryptsetup`. If that succeeds the encrypted device is removed from the UI and replaced with the new un-encrypted device:
+
+![unencrypted_hdr][02]
+
+That's it! These devices can't be auto-booted from at the moment since the password needs to be manually entered. The UI also doesn't have a way yet to select specific options for `cryptsetup`, but if you find yourself needing to do so you can run `cryptsetup` manually from the shell and pb-discover will recognise the new unencrypted device automatically.
+
+This is in Petitboot as of v1.10.3 so go check it out! Just make sure your image includes the kernel and cryptsetup [dependencies](https://github.com/open-power/op-build/pull/2840).
+
+[00]: /images/sammj/encrypted_hdr.png
+[01]: /images/sammj/encrypted_password.png
+[02]: /images/sammj/unencrypted_hdr.png
