@@ -1,0 +1,193 @@
+Title: TEN THOUSAND DISKS
+Date: 2019-06-18 16:47:00
+Authors: Samuel Mendoza-Jonas
+Category: Development
+Tags: linux, firmware, goodposts, realcontent, madposting, openpower, testing, op-test, qemu, pci
+
+In OpenPOWER land we have a project called [op-test-framework](https://github.com/open-power/op-test-framework/) which (for all its strengths and weaknesses) allows us to test firmware on a variety of different hardware platforms and even emulators like Qemu.
+
+Qemu is a fantasic tool allowing us to relatively quickly test against an emulated POWER model, and of course is a critical part of KVM virtual machines running natively on POWER hardware. However the default POWER model in Qemu is based on the "pseries" machine type, which models something closer to a virtual machine or a PowerVM partition rather than a "bare metal" machine.
+
+Luckily we have [Cédric Le Goater](https://github.com/legoater) who is [developing and maintaining](https://github.com/legoater/qemu) a Qemu "powernv" machine type which more accurately models running directly on an OpenPOWER machine. It's an unwritten rule that if you're using Qemu in op-test, you've compiled this version of Qemu!
+
+## Teething Problems
+
+Because the "powernv" type does more accurately model the physical system some extra care needs to be taken when setting it up. In particular at one point we noticed that the pretend CDROM and disk drive we attached to the model were.. not being attached. [This commit](https://github.com/open-power/op-test-framework/commit/1a97bc92c6029cfda91f565face260b806c04d86) took care of that; the problem was that the [PCI topology](https://github.com/legoater/qemu/wiki/PowerNV#complex-configuration) defined by the layout required us to be more exact about where PCI devices were to be added. By default only three spare PCI "slots" are available but as the commit says, "This can be expanded by adding bridges"...
+
+## More Slots!
+
+Never one to stop at a just-enough solution, I wondered how easy it would be to add an extra PCI bridge or two to give the Qemu model more available slots for PCI devices. It turns out, easy enough once you know the correct invocation. For example, adding a PCI bridge in the first slot of the first default PHB is:
+
+```
+-device pcie-pci-bridge,id=pcie.3,bus=pcie.0,addr=0x0
+```
+
+And inserting a device in that bridge just requires us to specify the bus and slot:
+
+```
+-device virtio-blk-pci,drive=cdrom01,id=virtio02,bus=pcie.4,addr=3
+```
+
+Great! Each bridge provides 31 slots, so now we have plenty of room for extra devices.
+
+## Why Stop There?
+
+We have three free slots, and we don't have a strict requirement on where devices are plugged in, so lets just plug a bridge into each of those slots while we're here:
+
+```
+-device pcie-pci-bridge,id=pcie.3,bus=pcie.0,addr=0x0 \
+-device pcie-pci-bridge,id=pcie.4,bus=pcie.1,addr=0x0 \
+-device pcie-pci-bridge,id=pcie.5,bus=pcie.2,addr=0x0
+```
+
+What happens if we insert a new PCI bridge into another PCI bridge? Aside from stressing out our PCI developers, a bunch of extra slots! And then we could plug bridges into those bridges and then..
+
+<iframe src="https://giphy.com/embed/VB5WwlZIt8eRy" width="480" height="199" frameBorder="0" class="giphy-embed" allowFullScreen></iframe>
+<br>
+
+
+Thus was born ["OpTestQemu: Add PCI bridges to support more devices."](https://github.com/open-power/op-test-framework/commit/6e78eea78a2f2cf37ebdd2cccbd5b18a7050c1eb) and the testcase ["Petitboot10000Disks"](https://github.com/open-power/op-test-framework/blob/master/testcases/Petitboot10000Disks.py).
+The changes to the Qemu model setup fill up each PCI bridge as long as we have devices to add, but reserve the first slot to add another bridge if we run out of room... and so on..
+
+Officially this is to support adding interesting disk topologies to test Pettiboot use cases, stress test device handling, and so on, but while we're here... what happens with 10,000 temporary disks?
+
+```
+======================================================================
+ERROR: testListDisks (testcases.Petitboot10000Disks.ConfigEditorTestCase)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/sam/git/op-test-framework/testcases/Petitboot10000Disks.py", line 27, in setUp
+    self.system.goto_state(OpSystemState.PETITBOOT_SHELL)
+  File "/home/sam/git/op-test-framework/common/OpTestSystem.py", line 366, in goto_state
+    self.state = self.stateHandlers[self.state](state)
+  File "/home/sam/git/op-test-framework/common/OpTestSystem.py", line 695, in run_IPLing
+    raise my_exception
+UnknownStateTransition: Something happened system state="2" and we transitioned to UNKNOWN state.  Review the following for more details
+Message="OpTestSystem in run_IPLing and the Exception=
+"filedescriptor out of range in select()"
+ caused the system to go to UNKNOWN_BAD and the system will be stopping."
+
+```
+
+Yeah that's probably to be expected without some more massaging. What about a more modest 512?
+```
+I: Resetting PHBs and training links...
+[   55.293343496,5] PCI: Probing slots...
+[   56.364337089,3] PHB#0000:02:01.0 pci_find_ecap hit a loop !
+[   56.364973775,3] PHB#0000:02:01.0 pci_find_ecap hit a loop !
+[   57.127964432,3] PHB#0000:03:01.0 pci_find_ecap hit a loop !
+[   57.128545637,3] PHB#0000:03:01.0 pci_find_ecap hit a loop !
+[   57.395489618,3] PHB#0000:04:01.0 pci_find_ecap hit a loop !
+[   57.396048285,3] PHB#0000:04:01.0 pci_find_ecap hit a loop !
+[   58.145944205,3] PHB#0000:05:01.0 pci_find_ecap hit a loop !
+[   58.146465795,3] PHB#0000:05:01.0 pci_find_ecap hit a loop !
+[   58.404954853,3] PHB#0000:06:01.0 pci_find_ecap hit a loop !
+[   58.405485438,3] PHB#0000:06:01.0 pci_find_ecap hit a loop !
+[   60.178957315,3] PHB#0001:02:01.0 pci_find_ecap hit a loop !
+[   60.179524173,3] PHB#0001:02:01.0 pci_find_ecap hit a loop !
+[   60.198502097,3] PHB#0001:02:02.0 pci_find_ecap hit a loop !
+[   60.198982582,3] PHB#0001:02:02.0 pci_find_ecap hit a loop !
+[   60.435096197,3] PHB#0001:03:01.0 pci_find_ecap hit a loop !
+[   60.435634380,3] PHB#0001:03:01.0 pci_find_ecap hit a loop !
+[   61.171512439,3] PHB#0001:04:01.0 pci_find_ecap hit a loop !
+[   61.172029071,3] PHB#0001:04:01.0 pci_find_ecap hit a loop !
+[   61.425416049,3] PHB#0001:05:01.0 pci_find_ecap hit a loop !
+[   61.425934524,3] PHB#0001:05:01.0 pci_find_ecap hit a loop !
+[   62.172664549,3] PHB#0001:06:01.0 pci_find_ecap hit a loop !
+[   62.173186458,3] PHB#0001:06:01.0 pci_find_ecap hit a loop !
+[   63.434516732,3] PHB#0002:02:01.0 pci_find_ecap hit a loop !
+[   63.435062124,3] PHB#0002:02:01.0 pci_find_ecap hit a loop !
+[   64.177567772,3] PHB#0002:03:01.0 pci_find_ecap hit a loop !
+[   64.178099773,3] PHB#0002:03:01.0 pci_find_ecap hit a loop !
+[   64.431763989,3] PHB#0002:04:01.0 pci_find_ecap hit a loop !
+[   64.432285000,3] PHB#0002:04:01.0 pci_find_ecap hit a loop !
+[   65.180506790,3] PHB#0002:05:01.0 pci_find_ecap hit a loop !
+[   65.181049905,3] PHB#0002:05:01.0 pci_find_ecap hit a loop !
+[   65.432105600,3] PHB#0002:06:01.0 pci_find_ecap hit a loop !
+[   65.432654326,3] PHB#0002:06:01.0 pci_find_ecap hit a loop !
+```
+
+(That isn't good)
+
+```
+[   66.177240655,5] PCI Summary:
+[   66.177906083,5] PHB#0000:00:00.0 [ROOT] 1014 03dc R:00 C:060400 B:01..07 
+[   66.178760724,5] PHB#0000:01:00.0 [ETOX] 1b36 000e R:00 C:060400 B:02..07 
+[   66.179501494,5] PHB#0000:02:01.0 [ETOX] 1b36 000e R:00 C:060400 B:03..07 
+[   66.180227773,5] PHB#0000:03:01.0 [ETOX] 1b36 000e R:00 C:060400 B:04..07 
+[   66.180953149,5] PHB#0000:04:01.0 [ETOX] 1b36 000e R:00 C:060400 B:05..07 
+[   66.181673576,5] PHB#0000:05:01.0 [ETOX] 1b36 000e R:00 C:060400 B:06..07 
+[   66.182395253,5] PHB#0000:06:01.0 [ETOX] 1b36 000e R:00 C:060400 B:07..07 
+[   66.183207399,5] PHB#0000:07:02.0 [PCID] 1af4 1001 R:00 C:010000 (          scsi) 
+[   66.183969138,5] PHB#0000:07:03.0 [PCID] 1af4 1001 R:00 C:010000 (          scsi) 
+```
+
+(a lot more of this)
+
+```
+[   67.055196945,5] PHB#0002:02:1e.0 [PCID] 1af4 1001 R:00 C:010000 (          scsi) 
+[   67.055926264,5] PHB#0002:02:1f.0 [PCID] 1af4 1001 R:00 C:010000 (          scsi) 
+[   67.094591773,5] INIT: Waiting for kernel...
+[   67.095105901,5] INIT: 64-bit LE kernel discovered
+[   68.095749915,5] INIT: Starting kernel at 0x20010000, fdt at 0x3075d270 168365 bytes
+
+zImage starting: loaded at 0x0000000020010000 (sp: 0x0000000020d30ee8)
+Allocating 0x1dc5098 bytes for kernel...
+Decompressing (0x0000000000000000 <- 0x000000002001f000:0x0000000020d2e578)...
+Done! Decompressed 0x1c22900 bytes
+
+Linux/PowerPC load: 
+Finalizing device tree... flat tree at 0x20d320a0
+[   10.120562] watchdog: CPU 0 self-detected hard LOCKUP @ pnv_pci_cfg_write+0x88/0xa4
+[   10.120746] watchdog: CPU 0 TB:50402010473, last heartbeat TB:45261673150 (10039ms ago)
+[   10.120808] Modules linked in:
+[   10.120906] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 5.0.5-openpower1 #2
+[   10.120956] NIP:  c000000000058544 LR: c00000000004d458 CTR: 0000000030052768
+[   10.121006] REGS: c0000000fff5bd70 TRAP: 0900   Not tainted  (5.0.5-openpower1)
+[   10.121030] MSR:  9000000002009033 <SF,HV,VEC,EE,ME,IR,DR,RI,LE>  CR: 48002482  XER: 20000000
+[   10.121215] CFAR: c00000000004d454 IRQMASK: 1 
+[   10.121260] GPR00: 00000000300051ec c0000000fd7c3130 c000000001bcaf00 0000000000000000 
+[   10.121368] GPR04: 0000000048002482 c000000000058544 9000000002009033 0000000031c40060 
+[   10.121476] GPR08: 0000000000000000 0000000031c40060 c00000000004d46c 9000000002001003 
+[   10.121584] GPR12: 0000000031c40000 c000000001dd0000 c00000000000f560 0000000000000000 
+[   10.121692] GPR16: 0000000000000000 0000000000000000 0000000000000001 0000000000000000 
+[   10.121800] GPR20: 0000000000000000 0000000000000000 0000000000000000 0000000000000000 
+[   10.121908] GPR24: 0000000000000005 0000000000000000 0000000000000000 0000000000000104 
+[   10.122016] GPR28: 0000000000000002 0000000000000004 0000000000000086 c0000000fd9fba00 
+[   10.122150] NIP [c000000000058544] pnv_pci_cfg_write+0x88/0xa4
+[   10.122187] LR [c00000000004d458] opal_return+0x14/0x48
+[   10.122204] Call Trace:
+[   10.122251] [c0000000fd7c3130] [c000000000058544] pnv_pci_cfg_write+0x88/0xa4 (unreliable)
+[   10.122332] [c0000000fd7c3150] [c0000000000585d0] pnv_pci_write_config+0x70/0x9c
+[   10.122398] [c0000000fd7c31a0] [c000000000234fec] pci_bus_write_config_word+0x74/0x98
+[   10.122458] [c0000000fd7c31f0] [c00000000023764c] __pci_read_base+0x88/0x3a4
+[   10.122518] [c0000000fd7c32c0] [c000000000237a18] pci_read_bases+0xb0/0xc8
+[   10.122605] [c0000000fd7c3300] [c0000000002384bc] pci_setup_device+0x4f8/0x5b0
+[   10.122670] [c0000000fd7c33a0] [c000000000238d9c] pci_scan_single_device+0x9c/0xd4
+[   10.122729] [c0000000fd7c33f0] [c000000000238e2c] pci_scan_slot+0x58/0xf4
+[   10.122796] [c0000000fd7c3430] [c000000000239eb8] pci_scan_child_bus_extend+0x40/0x2a8
+[   10.122861] [c0000000fd7c34a0] [c000000000239e34] pci_scan_bridge_extend+0x4d4/0x504
+[   10.122928] [c0000000fd7c3580] [c00000000023a0f8] pci_scan_child_bus_extend+0x280/0x2a8
+[   10.122993] [c0000000fd7c35f0] [c000000000239e34] pci_scan_bridge_extend+0x4d4/0x504
+[   10.123059] [c0000000fd7c36d0] [c00000000023a0f8] pci_scan_child_bus_extend+0x280/0x2a8
+[   10.123124] [c0000000fd7c3740] [c000000000239e34] pci_scan_bridge_extend+0x4d4/0x504
+[   10.123191] [c0000000fd7c3820] [c00000000023a0f8] pci_scan_child_bus_extend+0x280/0x2a8
+[   10.123256] [c0000000fd7c3890] [c000000000239b5c] pci_scan_bridge_extend+0x1fc/0x504
+[   10.123322] [c0000000fd7c3970] [c00000000023a064] pci_scan_child_bus_extend+0x1ec/0x2a8
+[   10.123388] [c0000000fd7c39e0] [c000000000239b5c] pci_scan_bridge_extend+0x1fc/0x504
+[   10.123454] [c0000000fd7c3ac0] [c00000000023a064] pci_scan_child_bus_extend+0x1ec/0x2a8
+[   10.123516] [c0000000fd7c3b30] [c000000000030dcc] pcibios_scan_phb+0x134/0x1f4
+[   10.123574] [c0000000fd7c3bd0] [c00000000100a800] pcibios_init+0x9c/0xbc
+[   10.123635] [c0000000fd7c3c50] [c00000000000f398] do_one_initcall+0x80/0x15c
+[   10.123698] [c0000000fd7c3d10] [c000000001000e94] kernel_init_freeable+0x248/0x24c
+[   10.123756] [c0000000fd7c3db0] [c00000000000f574] kernel_init+0x1c/0x150
+[   10.123820] [c0000000fd7c3e20] [c00000000000b72c] ret_from_kernel_thread+0x5c/0x70
+[   10.123854] Instruction dump:
+[   10.123885] 7d054378 4bff56f5 60000000 38600000 38210020 e8010010 7c0803a6 4e800020 
+[   10.124022] e86a0018 54c6043e 7d054378 4bff5731 <60000000> 4bffffd8 e86a0018 7d054378 
+[   10.124180] Kernel panic - not syncing: Hard LOCKUP
+[   10.124232] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 5.0.5-openpower1 #2
+[   10.124251] Call Trace:
+```
+
+I wonder if I can submit that bug without someone throwing something at my desk.
