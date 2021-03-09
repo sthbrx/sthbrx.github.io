@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 AUTHOR = u'OzLabs'
-SITENAME = u'Store Half Byte-Reverse Indexed'
+SITENAME = u'Store Halfword Byte-Reverse Indexed'
 SITEURL = 'https://sthbrx.github.io'
 SITESUBTITLE = 'A Power Technical Blog'
 
