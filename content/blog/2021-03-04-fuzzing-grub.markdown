@@ -13,7 +13,7 @@ This is a multi-part series: I think it will end up being 4 posts. I'm hoping to
 cover:
 
  * Part 1 (this post): getting started with fuzzing grub
- * Part 2: going faster by doing lots more work
+ * Part 2: [going faster by doing lots more work](/blog/2021/06/14/fuzzing-grub-part-2-going-faster/)
  * Part 3: fuzzing filesystems and more
  * Part 4: potential next steps and avenues for further work
 
