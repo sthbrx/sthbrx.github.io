@@ -1,0 +1,23 @@
+Title: Power kernel hardening features in Linux 6.1
+Date: 2022-10-26 16:30:00
+Authors: Russell Currey
+Category: Development
+Tags: linux, kernel, hardening
+
+Linux 6.1-rc1 was tagged on October 16th, 2022 and includes a bunch of nice things from my team that I want to highlight.  Our goal is to make the Linux kernel running on IBM's Power CPUs more secure, and landed a few goodies upstream in 6.1 to that end.
+
+Specifically, Linux 6.1 on Power will include [a complete system call infrastructure rework with security *and* performance benefits](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=7e92e01b724526b98cbc7f03dd4afa0295780d56), [support for KFENCE (a low-overhead memory safety error detector)](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=a5edf9815dd739fce660b4c8658f61b7d2517042), and [execute-only memory (XOM) support on the Radix MMU](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=395cac7752b905318ae454a8b859d4c190485510).
+
+The syscall work from Rohan McLure and Andrew Donnellan replaces arch/powerpc's legacy infrastructure with the syscall wrapper shared between architectures.  This was a significant overhaul of a lot of legacy code impacting all of powerpc's many platforms, including multiple different ABIs and 32/64bit compatibility infrastructure.  Rohan's series started at [v1 with 6 patches](http://patchwork.ozlabs.org/project/linuxppc-dev/list/?series=302791&state=*) and ended at [v6 with 25 patches](http://patchwork.ozlabs.org/project/linuxppc-dev/list/?series=319348&state=*), and he's done an incredible job at adopting community feedback and handling new problems.
+
+Big thanks to Christophe Leroy, Arnd Bergmann, Nick Piggin, Michael Ellerman and others for their reviews, and of course Andrew for providing a lot of review and feedback (and prototyping the syscall wrapper in the first place).  Our syscalls have entered the modern era, we now zeroise registers to improve security, and gain a nice little performance boost by avoiding the allocation of a kernel stack frame.  For more detail, see [Rohan's cover letter](http://patchwork.ozlabs.org/project/linuxppc-dev/cover/20220921065605.1051927-1-rmclure@linux.ibm.com/).
+
+Next, we have Nicholas Miehlbradt's implementation of [Kernel Electric Fence (KFENCE)](https://www.kernel.org/doc/html/latest/dev-tools/kfence.html) (and `DEBUG_PAGEALLOC`) for 64-bit Power, including the Hash and Radix MMUs.  Christophe Leroy has already implemented KFENCE for 32-bit powerpc upstream and a series adding support for 64-bit was posted by Jordan Niethe last year, but couldn't proceed due to locking issues.  Those issues have since been resolved, and after fixing a previously unknown and very obscure MM issue, Nick's KFENCE patches have been merged.
+
+KFENCE is a low-overhead alternative to memory detectors like KASAN ([which we implemented for Radix earlier this year, thanks to Daniel Axtens and Paul Mackerras](https://git.kernel.org/pub/scm/linux/kernel/git/powerpc/linux.git/commit/?id=41b7a347bf1491e7300563bb224432608b41f62a)), which you probably wouldn't want to run in production.  If you're chasing a memory corruption bug that doesn't like to present itself, KFENCE can help you do that for out-of-bounds accesses, use-after-frees, double frees etc without significantly impacting performance.
+
+Finally, I wired up execute-only memory (XOM) for the Radix MMU.  XOM is a niche feature that lets users map pages with `PROT_EXEC` only, creating a page that can't be read or written to, but still executed.  This is primarily useful for defending against code reuse attacks like ROP, but has other uses such as JIT/sandbox environments.  Power8 and later CPUs running the Hash MMU already had this capability through protection keys (pkeys), my implementation for Radix uses the native execute permission bit of the Radix MMU instead.
+
+This basically took me an afternoon to wire up after I had the idea and I roped in Nicholas Miehlbradt to contribute a [selftest](https://github.com/torvalds/linux/blob/master/tools/testing/selftests/powerpc/mm/exec_prot.c), which ended up being a more significant engineering effort than the feature implementation itself.  We now have a comprehensive test for XOM that runs on both Hash and Radix for all possible combinations of R/W/X upstream.
+
+Anyway, that's all I have - this is my first time writing a post like this, so let me know what you think!  A lot of our work doesn't result in upstream patches so we're not always going to have kernel releases as eventful as this, but we can post summaries every once in a while if there's interest.  Thanks for reading!
