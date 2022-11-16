@@ -1,0 +1,47 @@
+Title: What distro options are there for POWER8 in 2022?
+Date: 2022-11-16 17:30:00
+Authors: Russell Currey
+Category: OpenPOWER
+Tags: linux, power8, distro
+
+If you have POWER8 systems that you want to keep alive, what are your options in 2022?  You can keep using the legacy distribution you're still using as long as it's still supported, but if you want some modernisation, that might not be the best option for you.  Here's the current landscape of POWER8 support in major distributions, and hopefully it helps you out!
+
+Please note that I am entirely focused on what runs and keeps getting new packages, not what companies will officially support.  [IBM provides documentation for that.](https://www.ibm.com/docs/en/linux-on-systems?topic=lpo-supported-linux-distributions-virtualization-options-power8-power9-linux-power-systems)  I'm also mostly focused on OpenPOWER and not what's supported under IBM PowerVM.
+
+**RHEL-compatible**
+
+Things aren't too great on the RHEL-compatible side.  RHEL 9 is compiled with P9 instructions, removing support for P8.  This includes compatible distributions, like CentOS Stream and Rocky Linux.
+
+You can continue to use RHEL 8 for a long time.  Unfortunately, Rocky Linux only has a Power release for EL9 and not EL8, and CentOS Stream 8 hits EOL May 31st, 2024 - a bit too soon for my liking.  If you're a RHEL customer though, you're set.
+
+**Fedora**
+
+Fedora seems like a great option - the latest versions still support P8 and there's no immediate signs of that changing.  The issue is that Fedora could change this with relatively little warning (and their big brother RHEL already has), Fedora doesn't provide LTS versions that will stay supported if this happens, and any options you could migrate to would be very different from what you're using.
+
+For that reason, I don't recommend using Fedora on POWER8 if you intend to keep it around for a while.  If you want something modern for a short-term project, go right ahead!  Otherwise, I'd avoid it.  If you're still keeping POWER8 systems alive, you probably want something more set-and-forget than Fedora anyway.
+
+**Ubuntu**
+
+Ubuntu is a mixed bag.  The good news is that Ubuntu 20.04 LTS is supported until mid-2025, and if you give Canonical money, that support can extend through 2030.  Ubuntu 20.04 LTS is my personal pick for the best distro to install on POWER8 systems that you want to have somewhat modern software but without the risks of future issues.
+
+The bad news is that POWER8 support went away in Ubuntu 22.04, which is extremely unfortunate.  Missing an LTS cycle is one thing, but *not having a pathway from 21.10 is another*.  If you were on 20.10/21.04/21.10, you are completely boned, because they're all out of support and 22.04 and later don't support POWER8.  You're going to have to reinstall 20.04.
+
+If I sound salty, it's because I had to do this for a few machines.  Hopefully you're not in that situation.  20.04 is going to be around for a good while longer, with a lot of modern creature comforts you'd miss on an EL8-compatible distro, so it's my pick for now.
+
+**OpenSUSE**
+
+I'm pretty ignorant when it comes to chameleon-flavoured distros, so take this with a grain of salt as most of it is from some quick searching.  OpenSUSE Leap follows SLES, but without extended support lifetimes for older major versions.  From what I can tell, the latest release (15.4) still includes POWER8 support (and adds Power10 support!), but similar to Fedora, that looks rather prone to a new version dropping P8 support to me.
+
+If the 15.x series stayed alive after 16 came out, you might be good, but it doesn't seem like there's a history of that happening.
+
+**Debian**
+
+Debian 11 "bullseye" came out in 2021, supports POWER8, and is likely to be supported until around 2026.  I can't really chime in on more than that because I am a certified Debian hater (even newer releases feel outdated to me), but that looks like a pretty good deal.
+
+**Other options**
+
+Those are just some major distros, there's plenty of others, including some Power-specific ones from the community.
+
+**Conclusion**
+
+POWER8's getting old, but is still plenty capable.  Make sure your distro still remembers to send your POWER8 a birthday card each year and you'll have plenty more good times to come.
