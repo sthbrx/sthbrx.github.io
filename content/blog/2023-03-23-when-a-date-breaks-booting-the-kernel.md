@@ -56,7 +56,7 @@ qemu-system-ppc64: OS terminated: OS panic: VFS: Unable to mount root fs on unkn
 ```
 
 Above the panic was some more context, saying
-```
+```text
 [    0.906194][    T1] Warning: unable to open an initial console.
 ...
 [    0.908321][    T1] VFS: Cannot open root device "vda2" or unknown-block(253,2): error -2
