@@ -6,7 +6,7 @@ Tags: linux
 
 ## The setup
 
-I've recently been working on internal CI infrastructure for testing kernels before sending them to the mailing list. As part of this effort, I became interested in reproducible builds. Minimising the changing parts outside of the source tree itself could improve consistency and ccache hits, which is great for trying to make the CI faster and more reproducible across different machines. This means removing 'external' factors like timestamps from the build process, because the time changes every build and means the results between builds of the same tree are no longer identical binaries. This also prevents using previously cached results, potentially slowing down builds (though it turns out the kernel does a good job of limiting the scope of where timestamps appear in the build).
+I've recently been working on internal CI infrastructure for testing kernels before sending them to the mailing list. As part of this effort, I became interested in [reproducible builds](https://reproducible-builds.org/). Minimising the changing parts outside of the source tree itself could improve consistency and ccache hits, which is great for trying to make the CI faster and more reproducible across different machines. This means removing 'external' factors like timestamps from the build process, because the time changes every build and means the results between builds of the same tree are no longer identical binaries. This also prevents using previously cached results, potentially slowing down builds (though it turns out the kernel does a good job of limiting the scope of where timestamps appear in the build).
 
 As part of this effort, I came across the `KBUILD_BUILD_TIMESTAMP` environment variable. This variable is used to set the kernel timestamp, which is primarily for any users who want to know when their kernel was built. That's mostly irrelevant for our work, so an easy `KBUILD_BUILD_TIMESTAMP=0` later and... it still uses the current date.
 
@@ -80,7 +80,7 @@ Above the panic was some more context, saying
 [    0.909486][    T1]  driver: sr
 ```
 
-This is even more baffling: if it's unable to open a console, then what am I reading these messages on? And error `-2`, or ENOENT, implies that something was missing. It starts off by saying it failed to open 'vda2', but then lists vda2 as a present drive with a known driver? So is vda2 missing or not? Which is it?
+This is even more baffling: if it's unable to open a console, then what am I reading these messages on? And error `-2`, or ENOENT, on opening 'vda2' implies that no such file or directory exists. But it then lists vda2 as a present drive with a known driver? So is vda2 missing or not?
 
 
 ## Living in denial
