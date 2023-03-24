@@ -6,7 +6,7 @@ Tags: linux
 
 ## The setup
 
-I've recently been working on internal CI infrastructure for testing kernels before sending them to the mailing list. As part of this effort, I became interested in reproducible builds. Minimising the changing parts outside of the source tree itself could improve consistency and ccache hits, which is great for trying to make the CI faster and more reproducible across different machines. This means removing 'external' factors like timestamps from the build process, because the time changes every build and means the results between builds of the same tree are no longer identical binaries.
+I've recently been working on internal CI infrastructure for testing kernels before sending them to the mailing list. As part of this effort, I became interested in reproducible builds. Minimising the changing parts outside of the source tree itself could improve consistency and ccache hits, which is great for trying to make the CI faster and more reproducible across different machines. This means removing 'external' factors like timestamps from the build process, because the time changes every build and means the results between builds of the same tree are no longer identical binaries. This also prevents using previously cached results, potentially slowing down builds (though it turns out the kernel does a good job of limiting the scope of where timestamps appear in the build).
 
 As part of this effort, I came across the `KBUILD_BUILD_TIMESTAMP` environment variable. This variable is used to set the kernel timestamp, which is primarily for any users who want to know when their kernel was built. That's mostly irrelevant for our work, so an easy `KBUILD_BUILD_TIMESTAMP=0` later and... it still uses the current date.
 
@@ -16,7 +16,7 @@ Ok, checking [the documentation](https://docs.kernel.org/kbuild/kbuild.html#kbui
 
 So it looks like the timestamp variable is actually expected to be a date format. To make it obvious that it's not a 'real' date, let's set `KBUILD_BUILD_TIMESTAMP=0000-01-01`. A bunch of zeroes (and the ones to make it a valid month and day) should tip off anyone to the fact it's invalid.
 
-As an aside, this is a different date to what I tried to set it to earlier; a 'timestamp' typically refers to the number of seconds since the UNIX epoch (1970), so my first attempt would have corresponded to 1970-01-01. But given we're passing a date, not a timestamp, there should be no problem setting it back to the year 0. The docs don't mention it being a timestamp at least...
+As an aside, this is a different date to what I tried to set it to earlier; a 'timestamp' typically refers to the number of seconds since the UNIX epoch (1970), so my first attempt would have corresponded to 1970-01-01. But given we're passing a date, not a timestamp, there should be no problem setting it back to the year 0. And I like the aesthetics of 0000 over 1970.
 
 Building and booting the kernel, we see `#1 SMP 0000-01-01` printed as the build timestamp. Success! After confirming everything works, I set the environment variable in the CI jobs and call it a day.
 
