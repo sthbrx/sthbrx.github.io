@@ -1,18 +1,27 @@
-Title: When a date breaks booting the kernel
-Date: 2023-03-23 00:00:00
+Title: Dumb bugs: When a date breaks booting the kernel
+Date: 2023-03-24 00:00:00
 Authors: Benjamin Gray
 Category: Development
 Tags: linux
 
 ## The setup
 
-I've recently been working on internal CI infrastructure for testing kernels before sending them to the mailing list. As part of this effort, I became interested in reproducible builds. Minimising the changing parts outside of the source tree itself could improve consistency and ccache hits, which is great for trying to make the CI faster and more reproducible.
+I've recently been working on internal CI infrastructure for testing kernels before sending them to the mailing list. As part of this effort, I became interested in reproducible builds. Minimising the changing parts outside of the source tree itself could improve consistency and ccache hits, which is great for trying to make the CI faster and more reproducible across different machines. This means removing 'external' factors like timestamps from the build process, because the time changes every build and means the results between builds of the same tree are no longer identical binaries.
 
-As part of this effort, I came across the `KBUILD_BUILD_TIMESTAMP` environment variable. This variable is used to set the kernel timestamp, which is primarily just baked into the version string for any users who want to know when their kernel was built. That's mostly irrelevant for our work, so an easy `KBUILD_BUILD_TIMESTAMP=0` later and... it still uses the current date.
+As part of this effort, I came across the `KBUILD_BUILD_TIMESTAMP` environment variable. This variable is used to set the kernel timestamp, which is primarily for any users who want to know when their kernel was built. That's mostly irrelevant for our work, so an easy `KBUILD_BUILD_TIMESTAMP=0` later and... it still uses the current date.
 
-Ok, after checking the documentation it looks like the timestamp variable is actually expected to be a date format, as accepted by `date -d`. So to make it obvious that it's not a 'real' date, let's set `KBUILD_BUILD_TIMESTAMP=0000-01-01`.
+Ok, checking [the documentation](https://docs.kernel.org/kbuild/kbuild.html#kbuild-build-timestamp) it says
+
+> Setting this to a date string overrides the timestamp used in the UTS_VERSION definition (uname -v in the running kernel). The value has to be a string that can be passed to date -d. The default value is the output of the date command at one point during build.
+
+So it looks like the timestamp variable is actually expected to be a date format. To make it obvious that it's not a 'real' date, let's set `KBUILD_BUILD_TIMESTAMP=0000-01-01`. A bunch of zeroes (and the ones to make it a valid month and day) should tip off anyone to the fact it's invalid.
+
+As an aside, this is a different date to what I tried to set it to earlier; a 'timestamp' typically refers to the number of seconds since the UNIX epoch (1970), so my first attempt would have corresponded to 1970-01-01. But given we're passing a date, not a timestamp, there should be no problem setting it back to the year 0. The docs don't mention it being a timestamp at least...
 
 Building and booting the kernel, we see `#1 SMP 0000-01-01` printed as the build timestamp. Success! After confirming everything works, I set the environment variable in the CI jobs and call it a day.
+
+
+## An unexpected error
 
 A few days later I need to run the CI to test my patches, and something strange happens. It builds fine, but the boot tests that load a root disk image fail inexplicably: there is a kernel panic saying "VFS: Unable to mount root fs on unknown-block(253,2)".
 ```text
@@ -46,22 +55,50 @@ A few days later I need to run the CI to test my patches, and something strange 
 qemu-system-ppc64: OS terminated: OS panic: VFS: Unable to mount root fs on unknown-block(253,2)
 ```
 
+Above the panic was some more context, saying
+```
+[    0.906194][    T1] Warning: unable to open an initial console.
+...
+[    0.908321][    T1] VFS: Cannot open root device "vda2" or unknown-block(253,2): error -2
+[    0.908356][    T1] Please append a correct "root=" boot option; here are the available partitions:
+[    0.908528][    T1] 0100           65536 ram0
+[    0.908657][    T1]  (driver?)
+[    0.908735][    T1] 0101           65536 ram1
+[    0.908744][    T1]  (driver?)
+...
+[    0.909216][    T1] 010f           65536 ram15
+[    0.909226][    T1]  (driver?)
+[    0.909265][    T1] fd00         5242880 vda
+[    0.909282][    T1]  driver: virtio_blk
+[    0.909335][    T1]   fd01            4096 vda1 d1f35394-01
+[    0.909364][    T1]
+[    0.909401][    T1]   fd02         5237760 vda2 d1f35394-02
+[    0.909408][    T1]
+[    0.909441][    T1] fd10             366 vdb
+[    0.909446][    T1]  driver: virtio_blk
+[    0.909479][    T1] 0b00         1048575 sr0
+[    0.909486][    T1]  driver: sr
+```
+
+This is even more baffling: if it's unable to open a console, then what am I reading these messages on? And error `-2`, or ENOENT, implies that something was missing. It starts off by saying it failed to open 'vda2', but then lists vda2 as a present drive with a known driver? So is vda2 missing or not? Which is it?
+
+
 ## Living in denial
 
-As you've read the title of this article, you can probably guess as to what changed to cause this error. But at the time I had no idea what could have been the cause. I'd already confirmed that a kernel with a set timestamp can boot to userspace, and there was another (seemingly) far more likely candidate for the failure: as part of the CI design, patches are extracted from the submitted branch and rebased onto the maintainers tree. This is great from a convenience perspective, because you don't need to worry about forgetting to rebase your patches before testing and submission. But if the maintainer has synced their branch with Linus' tree it means there could be a lot of things changed in the source tree between runs, even if they were only a few days apart.
+As you've read the title of this article, you can probably guess as to what changed to cause this error. But at the time I had no idea what could have been the cause. I'd already confirmed that a kernel with a set timestamp can boot to userspace, and there was another (seemingly) far more likely candidate for the failure: as part of the CI design, patches are extracted from the submitted branch and rebased onto the maintainer's tree. This is great from a convenience perspective, because you don't need to worry about forgetting to rebase your patches before testing and submission. But if the maintainer has synced their branch with Linus' tree it means there could be a lot of things changed in the source tree between runs, even if they were only a few days apart.
 
 So, when you're faced with a working test on one commit and a broken test on another commit, it's time to break out the `git bisect`. Downloading the kernel images from the relevant CI jobs, I confirmed that indeed one was working while the other was broken. So I bisected the relevant commits, and... everything kept working. Each step I would build and boot the kernel, and each step would reach userspace just fine. I was getting suspicious at this point, so skipped ahead to the known bad commit and built and tested it locally. It _also worked_.
 
 This was highly confusing, because it meant there was something fishy going on. Some kind of state outside of the kernel tree. Could it be... surely not...
 
-Comparing the boot logs of the two CI kernels, I see that the owrking one indeed uses an actual timestamp, and the broken one uses the 0000-01-01 fixed date. Oh no. Setting the timestamp with a local build, I can now reproduce the boot panic with a kernel I built myself.
+Comparing the boot logs of the two CI kernels, I see that the working one indeed uses an actual timestamp, and the broken one uses the 0000-01-01 fixed date. Oh no. Setting the timestamp with a local build, I can now reproduce the boot panic with a kernel I built myself.
 
 
 ## But... why?
 
-OK, so it's obvious at this point that the timestamp is affecting loading a root disk somehow. But why? The obvious answer is that it's before the UNIX epoch. That something in the build process is turning the date into an actual timestamp, and going wrong when that timestamp gets used for something.
+OK, so it's obvious at this point that the timestamp is affecting loading a root disk somehow. But why? The obvious answer is that it's before the UNIX epoch. Something in the build process is turning the date into an actual timestamp, and going wrong when that timestamp gets used for something.
 
-But it's not like there was a build error complaining about it. As best I could tell, the kernel doesn't try to parse the date anywhere, besides passing it to `date` during the build. And if `date` had an issue with it, it would have brokem the _build_. Not _booting_ the kernel. There's no `date` utility being invoked during kernel boot!
+But it's not like there was a build error complaining about it. As best I could tell, the kernel doesn't try to parse the date anywhere, besides passing it to `date` during the build. And if `date` had an issue with it, it would have broken the _build_. Not _booting_ the kernel. There's no `date` utility being invoked during kernel boot!
 
 Regardless, I set about tracing the usage of `KBUILD_BUILD_TIMESTAMP` inside the kernel. The stacktrace in the panic gave the end point of the search; the function `mount_block_root()` wasn't happy. So all I had to do was work out at which point `mount_block_root()` tried to access the `KBUILD_BUILD_TIMESTAMP` value.
 
@@ -96,7 +133,7 @@ $ rg "(\.|\->)version\b" | wc -l
 
 I tried tracing the usage of `init_uts_ns`, but didn't get very far.
 
-By now I'd already posted this in chat, and another developer Joel was also investigating this bizarre bug. They had been testing different timestamp values and made the horrifying discovery that the bug sticks around after a rebuild. So you could start with a broken build, set the timestamp back to the correct value, and the resulting kernel would _still be broken_. The boot log would report the correct time, but the root disk mounter panicked all the same.
+By now I'd already posted this in chat and another developer, [Joel Stanley](https://shenki.github.io/), was also investigating this bizarre bug. They had been testing different timestamp values and made the horrifying discovery that the bug sticks around after a rebuild. So you could start with a broken build, set the timestamp back to the correct value, rebuild, and the resulting kernel would _still be broken_. The boot log would report the correct time, but the root disk mounter panicked all the same.
 
 
 ## Getting sidetracked
@@ -160,11 +197,11 @@ Files build/broken/vmlinux.strip.gz and build/working/vmlinux.strip.gz differ
 
 There are some new entries here: notably `init/version*` and `usr/initramfs*`. Binary searching these files results in a single culprit: `usr/initramfs_data.cpio`. This is quite fitting, as the `.cpio` file is an archive defining a filesystem layout, [much like `.tar` files](https://docs.kernel.org/filesystems/ramfs-rootfs-initramfs.html?highlight=initramfs#why-cpio-rather-than-tar). This file is actually embedded into the kernel image, and loaded as a bare-bones shim filesystem when the user doesn't provide their own initramfs[^1].
 
-[^1]: initramfs, or initrd for the older format, are specific kinds of CPIO archives. They are intended to be loaded as the initial filesystem of a booted kernel, typically in preparation
+[^1]: initramfs, or initrd for the older format, are specific kinds of CPIO archives. The initramfs is intended to be loaded as the initial filesystem of a booted kernel, typically in preparation for loading your normal root filesystem. It might contain modules necessary to mount the disk for example.
 
 So it would make sense that if the CPIO archive wasn't being rebuilt, then the initial filesystem wouldn't change. And it would make sense for the initial filesystem to be causing mount issues of the proper root disk filesystem.
 
-This just leaves the question of how `KBUILD_BUILD_TIMESTAMP` is breaking the CPIO archive. And it's around this time that a third developer Andrew I'd roped into this bug hunt pointed out that the generator script for this CPIO archive was passing the `KBUILD_BUILD_TIMESTAMP` to `date`. Whoop, we've found the murder weapon[^2]!
+This just leaves the question of how `KBUILD_BUILD_TIMESTAMP` is breaking the CPIO archive. And it's around this time that a third developer, [Andrew](https://twitter.com/ajdlinux), who I'd roped into this bug hunt for having the (mis)fortune to sit next to me, pointed out that the generator script for this CPIO archive was passing the `KBUILD_BUILD_TIMESTAMP` to `date`. Whoop, we've found the murder weapon[^2]!
 
 [^2]: Hindsight again would suggest it was obvious to look here because it shows up when searching for `KBUILD_BUILD_TIMESTAMP`. I unfortunately wasn't familiar with the `usr/` source folder initially, and focused on the core kernel components too much earlier. Oh well, we found it eventually.
 
@@ -179,7 +216,7 @@ date -d"$KBUILD_BUILD_TIMESTAMP" +%s
 -62167255492
 ```
 
-This timestamp is then passed to a C program that assigns it to a variable `default_mtime`. Looking over the source, it seems this variable is used to set the `mtime` field on the files in the CPIO archive. The timestamp is stored as an `int64_t`. That's 64 bits of data, up to 16 hexadecimal characters. And yes, that's relevant: CPIO stores the `mtime` (and all other numerical fields) as ASCII hexadecimal characters. The `sprintf()` call that ultimately embeds the timestamp uses the `%08lX` format specifier. This formats a `long` as hexadecimal, padded to at least 8 characters. Hang on... ***at least*** 8 characters? What if our timestamp happens to be more?
+This timestamp is then passed to a C program that assigns it to a variable `default_mtime`. Looking over the source, it seems this variable is used to set the `mtime` field on the files in the CPIO archive. The timestamp is stored as a `time_t`, which is an alias for `int64_t`. That's 64 bits of data, up to 16 hexadecimal characters. And yes, that's relevant: CPIO stores the `mtime` (and all other numerical fields) as 32 bit unsigned integers represented by ASCII hexadecimal characters. The `sprintf()` call that ultimately embeds the timestamp uses the `%08lX` format specifier. This formats a `long` as hexadecimal, padded to at least 8 characters. Hang on... ***at least*** 8 characters? What if our timestamp happens to be more?
 
 It turns out that large timestamps are already guarded against. The program will error during build if the date is later than 2106-02-07 (maximum unsigned 8 hex digit timestamp).
 
@@ -190,14 +227,14 @@ It turns out that large timestamps are already guarded against. The program will
  * specification.
  */
 if (default_mtime > 0xffffffff) {
-        fprintf(stderr, "ERROR: Timestamp too large for cpio format\n");
-        exit(1);
+	fprintf(stderr, "ERROR: Timestamp too large for cpio format\n");
+	exit(1);
 }
 ```
 
 But we are using an `int64_t`. What would happen if one were to provide a negative timestamp?
 
-Well, `printf()` happily spits out `FFFFFFF1868AF63C` when we pass in our negative timestamp representing `0000-01-01`. That's 16 characters, 8 too many for the CPIO header[^3].
+Well, `sprintf()` happily spits out `FFFFFFF1868AF63C` when we pass in our negative timestamp representing `0000-01-01`. That's 16 characters, 8 too many for the CPIO header[^3].
 
 [^3]: I almost missed this initially. Thanks to the ASCII header format, `strings` was able to print the headers without any CPIO specific tooling. I did a double take when I noticed the headers for the broken CPIO were a little longer than the headers in the working one.
 
@@ -206,8 +243,46 @@ So at last we've found the cause of the panic: the timestamp is being formatted 
 
 ## Postmortem
 
-After discovering all this, I sent in a couple of patches to fix the CPIO generation and rebuild logic. They were not complicated fixes, but wow were they difficult to track down. I didn't see the error initially because I typically only boot with my own initrafs, not the embedded one and not with the intent to load a root disk. Then the panic itself was quite far away from the real issue, and there were many dead ends to explore.
+After discovering all this, I sent in a couple of patches to fix [the CPIO generation](https://lore.kernel.org/all/20230320040839.660475-1-bgray@linux.ibm.com/) and [rebuild logic](https://lore.kernel.org/all/20230320040839.660475-2-bgray@linux.ibm.com/). They were not complicated fixes, but wow were they time consuming to track down. I didn't see the error initially because I typically only boot with my own initramfs over the embedded one, and not with the intent to load a root disk. Then the panic itself was quite far away from the real issue, and there were many dead ends to explore.
 
-I also got curious as to why the kernel didn't complain about a corrupt initramfs earlier. A brief investigation showed a streaming parser that is _extremely_ fault tolerant, silently skipping invalid entries (like ones missing or having too long a name). The corrupted header was being interpreted as an entry with an empty name and 2 gigabyte body contents, which meant that (1) the kernel skipped inserting it due to the empty name, and (2) the kernel skipped the rest of the initramfs because it thought that up to 2 GB of the remaining content was part of that first entry. Perhaps this could be improved to require that all input is consumed without unexpected EOF, such as how the userspace `cpio` tool works (which, by the way, recognises the corrupt archive as such and refuses to decompress it). The parsing logic is mostly from the before-times though (i.e., pre inital commit), so it's difficult to distinguish intentional leniency and bugs.
+I also got curious as to why the kernel didn't complain about a corrupt initramfs earlier. A brief investigation showed a streaming parser that is _extremely_ fault tolerant, silently skipping invalid entries (like ones missing or having too long a name). The corrupted header was being interpreted as an entry with an empty name and 2 gigabyte body contents, which meant that (1) the kernel skipped inserting it due to the empty name, and (2) the kernel skipped the rest of the initramfs because it thought that up to 2 GB of the remaining content was part of that first entry.
 
-And that's where I've left things. Big thanks to Joel and Andrew for helping mw with this bug. It was certainly a trip.
+Perhaps this could be improved to require that all input is consumed without unexpected EOF, such as how the userspace `cpio` tool works (which, by the way, recognises the corrupt archive as such and refuses to decompress it). The parsing logic is mostly from the before-times though (i.e., pre initial git commit), so it's difficult to distinguish intentional leniency and bugs.
+
+
+## Afterword
+
+Incidentally, in investigating this I came across another bug. There is a helper function `panic_show_mem()` in the initramfs that's meant to dump memory information and then call `panic()`. It takes in standard `printf()` style format string and arguments, and tries to forward them to `panic()` which ultimately prints them.
+
+```C
+static void panic_show_mem(const char *fmt, ...)
+{
+	va_list args;
+
+	show_mem(0, NULL);
+	va_start(args, fmt);
+	panic(fmt, args);
+	va_end(args);
+}
+
+void panic(const char *fmt, ...);
+```
+
+But variadic arguments don't quite work this way: instead of forwarding the list `args` as intended, `panic()` will instead interpret `args` as a single argument for the format string `fmt`. Standard library functions address this by providing `v*` variants of `printf()` and friends. For example,
+
+```C
+int printf(char *fmt, ...);
+
+int vprintf(char *fmt, va_list args);
+```
+
+We might create a `vpanic()` function in the kernel that follows this style, but it seems easier to just make `panic_show_mem()` a macro and 'forward' the arguments in the source code
+
+```C
+#define panic_show_mem(fmt, ...) \
+	({ show_mem(0, NULL); panic(fmt, ##__VA_ARGS__); })
+```
+
+[Patch sent](https://lore.kernel.org/all/20230320230534.50174-1-bgray@linux.ibm.com/).
+
+And that's where I've left things. Big thanks to Joel and Andrew for helping me with this bug. It was certainly a trip.
