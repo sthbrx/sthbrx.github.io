@@ -273,7 +273,7 @@ index ee95937bdaf1..6f1117fe3870 100644
          return 0;
 ```
 
-Easy!  Problem solved.  The [commit that introduced this bug back in 2012](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=d6b9a81b2a45) was written by the legendary [Anton Blanchard](https://antonblanchardfacts.com), so it's always a treat to discover an Anton bug.  Ultimately this bug is of little consequence, but it's always fun to catch dormant issues with powerful tools like KASAN.
+Easy!  Problem solved.  The [commit that introduced this bug back in 2012](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=d6b9a81b2a45) was written by the legendary [Anton Blanchard](http://antonblanchardfacts.com), so it's always a treat to discover an Anton bug.  Ultimately this bug is of little consequence, but it's always fun to catch dormant issues with powerful tools like KASAN.
 
 
 ## In conclusion
