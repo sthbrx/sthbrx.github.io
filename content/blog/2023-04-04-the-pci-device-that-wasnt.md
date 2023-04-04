@@ -1,5 +1,5 @@
 Title: Dumb bugs: the PCI device that wasn't
-Date: 2023-03-24 00:00:00
+Date: 2023-04-04 15:55:00
 Authors: Russell Currey
 Category: Development
 Tags: linux
