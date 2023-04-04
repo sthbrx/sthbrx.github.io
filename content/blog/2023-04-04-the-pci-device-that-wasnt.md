@@ -4,7 +4,7 @@ Authors: Russell Currey
 Category: Development
 Tags: linux
 
-I was happily minding my own business one fateful afternoon when I receive the following kernel bug report:
+I was happily minding my own business one fateful afternoon when I received the following kernel bug report:
 
 ```text
 BUG: KASAN: slab-out-of-bounds in vga_arbiter_add_pci_device+0x60/0xe00
@@ -33,12 +33,12 @@ ret_from_kernel_thread+0x5c/0x64
 OK, so [KASAN](https://www.kernel.org/doc/html/latest/dev-tools/kasan.html) has helpfully found an out-of-bounds access in `vga_arbiter_add_pci_device()`.  What the heck is that?
 
 
-# Why does my VGA require arbitration?
+## Why does my VGA require arbitration?
 
 I'd never heard of the [VGA](https://en.wikipedia.org/wiki/VGA_connector) arbiter in the kernel (do kids these days know what VGA is?), or `vgaarb` as it's called.  What it does is irrelevant to this bug, but I found the history pretty interesting!  [Benjamin Herrenschmidt proposed VGA arbitration back in 2005](https://lists.freedesktop.org/archives/xorg/2005-March/006663.html) as a way of resolving conflicts between multiple legacy VGA devices that want to use the same address assignments.  This was previously handled in userspace by the X server, but issues arose with multiple X servers on the same machine.  Plus, it's probably not a good idea for this kind of thing to be handled by userspace.  [You can read more about the VGA arbiter in the kernel docs](https://docs.kernel.org/gpu/vgaarbiter.html), but it's probably not something anyone has thought much about in a long time.
 
 
-# The bad access
+## The bad access
 
 ```c
 static bool vga_arbiter_add_pci_device(struct pci_dev *pdev)
@@ -84,9 +84,9 @@ So `pci_notify()` gets called with our VIO device (somehow), and we're convertin
 Now we know why and how we're blowing up, but we still don't understand how we got here, so let's back up further.
 
 
-# Notifiers
+## Notifiers
 
-The kernel's device subsystem allows consumers to register callbacks to be notified on given events.  I'm not going to go into a ton of detail on how they work, because I don't fully understand myself, and there's a lot of internals of the device subsystem involved.
+The kernel's device subystem allows consumes to register callbacks so that they can be notified of a given event.  I'm not going to go into a ton of detail on how they work, because I don't fully understand myself, and there's a lot of internals of the device subsystem involved.
 The best references I could find for this are [notifier.h](https://elixir.bootlin.com/linux/latest/source/include/linux/notifier.h), and for our purposes here, [the register notifier functions in bus.h](https://elixir.bootlin.com/linux/latest/source/include/linux/device/bus.h#L260).
 
 Something's clearly gone awry if we can end up in a function named `pci_notify()` without passing it a PCI device.  We find where the notifier is registered in `vgaarb.c` here:
@@ -117,10 +117,10 @@ int device_add(struct device *dev)
                                              BUS_NOTIFY_ADD_DEVICE, dev);
 ```
 
-If the device we're initialising is attached to a bus, then we call the bus notifier of that bus with the `BUS_NOTIFY_ADD_DEVICE` notification, and the device in question.  So we're going through the process of adding a VIO device, and somehow calling into a notifier that's only registered for PCI devices.  I did a bunch of debugging to see if our VIO device was somehow malformed and pointing to a PCI bus, or the `struct subsys_private` (that's the `bus->p` above) was somehow pointing to the wrong place, but everything seemed sane.  My thesis of there being confusion between matching devices to buses was getting harder to justify - everything still looked sane.
+If the device we're initialising is attached to a bus, then we call the bus notifier of that bus with the `BUS_NOTIFY_ADD_DEVICE` notification, and the device in question.  So we're going through the process of adding a VIO device, and somehow calling into a notifier that's only registered for PCI devices.  I did a bunch of debugging to see if our VIO device was somehow malformed and pointing to a PCI bus, or the `struct subsys_private` (that's the `bus->p` above) was somehow pointing to the wrong place, but everything seemed sane.  My thesis of there being confusion while matching devices to buses was getting harder to justify - everything still looked sane.
 
 
-# Debuggers
+## Debuggers
 
 I do not like debuggers.  I am an avid `printk()` enthusiast.  There's no real justification for this, a bunch of my problems could almost certainly be solved easier by using actual tools, but my brain seemingly enjoys the routine of printing and building and running until I figure out what's going on.  It was becoming increasingly obvious, however, that `printk` could not save me here, and we needed to go deeper.
 
@@ -136,14 +136,14 @@ struct notifier_block {
 };
 ```
 
-So notifier chains are [singly linked lists](https://en.wikipedia.org/wiki/Linked_list#Singly_linked_list).  When callbacks are registered through functions like `bus_register_notifier()`, after a long chain of breadcrumbs we reach [notifier_chain_register()](https://elixir.bootlin.com/linux/latest/source/kernel/notifier.c#L22) which walks the list of `->next` pointers until it reaches `NULL`, at which point it sets `->next` of the tail node to the `struct notifier_block` that was passed in.  It's very important to note here that the data being appended to the list here is *not just the callback function* (i.e. `pci_notify()`), but the `struct notifier_block` itself (i.e. `struct notifier_block pci_notifier` from earlier).  There's no new data being initialised, just updating a pointer to the object that was passed by the caller.
+So notifier chains are [singly linked lists](https://en.wikipedia.org/wiki/Linked_list#Singly_linked_list).  Callbacks are registered through functions like `bus_register_notifier()`, then after a long chain of breadcrumbs we reach [`notifier_chain_register()`](https://elixir.bootlin.com/linux/latest/source/kernel/notifier.c#L22) which walks the list of `->next` pointers until it reaches `NULL`, at which point it sets `->next` of the tail node to the `struct notifier_block` that was passed in.  It's very important to note here that the data being appended to the list here is *not just the callback function* (i.e. `pci_notify()`), but the `struct notifier_block` itself (i.e. `struct notifier_block pci_notifier` from earlier).  There's no new data being initialised, just updating a pointer to the object that was passed by the caller.
 
 If you've guessed what our bug is at this point, great job!  If the same `struct notifier_block` gets registered to two different bus types, then both of their `bus_notifier` fields will point to the *same memory*, and any further notifiers registered to either bus will end up being referenced by both since they walk through the same node.
 
 So we bust out the debugger and start looking at what ends up in `bus_notifier` for PCI and VIO buses with breakpoints and watchpoints.
 
 
-# Candidates
+## Candidates
 
 Walking the `bus_notifier` list gave me the following:
 
@@ -208,7 +208,7 @@ when it should be like:
 +------------------+    +-----------------------------+    +-----------+
 ```
 
-# The fix
+## The fix
 
 Ultimately, the fix turned out to be pretty simple:
 
@@ -276,7 +276,7 @@ index ee95937bdaf1..6f1117fe3870 100644
 Easy!  Problem solved.  The [commit that introduced this bug back in 2012](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=d6b9a81b2a45) was written by the legendary [Anton Blanchard](https://antonblanchardfacts.com), so it's always a treat to discover an Anton bug.  Ultimately this bug is of little consequence, but it's always fun to catch dormant issues with powerful tools like KASAN.
 
 
-# In conclusion
+## In conclusion
 
 I think this bug provides a nice window into what kernel debugging can be like.  Thankfully, things are made easier by not dealing with any specific hardware and being easily reproducible in QEMU.
 
