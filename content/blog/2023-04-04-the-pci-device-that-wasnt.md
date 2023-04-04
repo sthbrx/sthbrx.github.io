@@ -86,7 +86,7 @@ Now we know why and how we're blowing up, but we still don't understand how we g
 
 ## Notifiers
 
-The kernel's device subystem allows consumes to register callbacks so that they can be notified of a given event.  I'm not going to go into a ton of detail on how they work, because I don't fully understand myself, and there's a lot of internals of the device subsystem involved.
+The kernel's device subsystem allows consumers to register callbacks so that they can be notified of a given event.  I'm not going to go into a ton of detail on how they work, because I don't fully understand myself, and there's a lot of internals of the device subsystem involved.
 The best references I could find for this are [notifier.h](https://elixir.bootlin.com/linux/latest/source/include/linux/notifier.h), and for our purposes here, [the register notifier functions in bus.h](https://elixir.bootlin.com/linux/latest/source/include/linux/device/bus.h#L260).
 
 Something's clearly gone awry if we can end up in a function named `pci_notify()` without passing it a PCI device.  We find where the notifier is registered in `vgaarb.c` here:
