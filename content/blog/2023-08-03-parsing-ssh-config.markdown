@@ -210,3 +210,20 @@ quirks to worry about.
 
 Sure enough, if we replace the config backend with this 'native' resolver, we
 can connect to all the machines with no problem.
+
+In general, I'd suggest avoiding any dependency on a second pass being done on
+the config. Resolve your aliases early, so that the rest of the rules work
+against the full hostname. If you later need to match against the name passed in
+the command line, you can use `Match originalhost=example`. The example above
+should always be written as
+
+```text
+Host example
+    HostName example.ozlabs.ibm.com
+
+Host *.ozlabs.ibm.com
+    ProxyJump proxy
+```
+
+even if the reversed order might appear to work thanks to the weird interactions
+described above.
