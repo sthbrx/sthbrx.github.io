@@ -156,8 +156,9 @@ The system config is effectively appended to the user config, to allow any
 system wide settings. Most of the time this isn't an issue because of the
 first-come-first-served rule with config matches (rule 2). But if the system
 config includes a `Match final`, it will trigger the entire config to be
-re-parsed, including the user section. And it so happens that, on Fedora, the
-system config does contain a `Match final`.
+re-parsed, including the user section. And it so happens that, at least on
+Fedora with the `openssh-clients` package installed, the system config does
+contain a `Match final`.
 
 But wait, there's more! If we want to specify a custom SSH config file, then we
 can use `-F path/to/config` in the command line. But this disables loading a
