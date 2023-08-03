@@ -65,8 +65,9 @@ make sense to fail a DNS lookup.
 Enough theorising, time to debug the extension as it tries to connect.
 
 From the error above, the string `"Error resolving authority"` looks like
-something I can search for. This takes me to the `catch` case for a large
-try-catch block. It could be annoying to narrow down which part of the block
+something I can search for. This takes me to the
+[`catch` case for a large try-catch block](https://github.com/jeanp413/open-remote-ssh/blob/521098e24f48b4b9e04d476895f9097b03f8c984/src/authResolver.ts#L226).
+It could be annoying to narrow down which part of the block
 throws the exception, but fortunately debugging is as easy as installing the
 dependencies and running the pre-configured 'Extension' debug target. This opens
 a new window with the local copy of the extension active, and I can debug it in
