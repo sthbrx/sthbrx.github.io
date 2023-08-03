@@ -1,37 +1,37 @@
 Title: Going out on a Limb: Efficient Elliptic Curve Arithmetic in OpenSSL
 Authors: Rohan McLure
-Date: 2023-07-31 13:15
+Date: 2023-08-03 13:15
 Category: Cryptography
 
-So I've just submitted a pull request to OpenSSL for a new strategy I've been developing for efficient field arithmetic used in secp384r1, a curve prescribed by NIST for digital signatures and key exchange. Interestingly, in spite of its prevalence, its implementation in OpenSSL has remained somewhat unoptimised, while less frequently used curves (P224, P256, P521) each have their own optimisations.
+So I've just submitted a [pull request](https://github.com/openssl/openssl/pull/21471) to OpenSSL for a new strategy I've been developing for efficient arithmetic used in secp384r1, a curve prescribed by NIST for digital signatures and key exchange. In spite of its prevalence, its implementation in OpenSSL has remained somewhat unoptimised, even as less frequently used curves (P224, P256, P521) each have their own optimisations.
 
-The strategy I have used one might call a 56-bit redundant limb implementation of arithmetic modulo P384 with _Solinas reduction_. Without too much micro-optimisation, we get ~5.5x speedup over the default (Montgomery Multiplication) implementation on creating digital signatures.
+The strategy I have used could be called a 56-bit redundant limb implementation with _Solinas reduction_. Without too much micro-optimisation, we get ~5.5x speedup over the default (Montgomery Multiplication) implementation on creating digital signatures.
 
 How is this possible? Well first let's quickly explain some language:
 
 ## Elliptic Curves
 
-When it comes to cryptography, it's more than likely someone with a computer science background will at least be familiar with ideas such as key-exchange and private-key signing. The stand-in asymetric cipher in a typical computer science curriculum will almost certainly by RSA. However the hayday of Elliptic Curve ciphers has well and truly arrived, and their operation seems no less mystical than when they were just a toy for academia.
+When it comes to cryptography, it's highly likely that those with a computer science background will be familiar with ideas such as key-exchange and private-key signing. The stand-in asymetric cipher in a typical computer science curriculum is typically RSA. However the hayday of Elliptic Curve ciphers has well and truly arrived, and their operation seems no less mystical than when they were just a toy for academia.
 
-I conjecture that programmers find ECC unnerving because the word 'Elliptic' implies some amount of continuous maths. Perhaps you've seen images of what an elliptic curve looks like as a subset of $\mathbb{R}^2$. As a useful cryptoraphic problem, we fundamentally are just interested with the algebraic properties of $\mathbb{F}$-rational points on the curve - an overly complex way to say 'the points with coordinates belonging to the [field](https://en.wikipedia.org/wiki/Field_(mathematics)) $\mathbb{F}$ that sit on the curve'. We can demonstrate their algebraic properties by an application of [Bézout's Theorem](https://en.wikipedia.org/wiki/Bézout%27s_theorem#:~:text=Bézout%27s%20theorem%20is%20a%20statement,the%20degrees%20of%20the%20polynomials.). What is not commonly understood is that the fields in use in ECC are very familiar mathematical objects.
+The word 'Elliptic' may seem to imply continuous mathematics. As a useful cryptographic problem, we fundamentally are just interested with the algebraic properties of these curves, whose points are elements of a [finite field](https://en.wikipedia.org/wiki/Finite_field). Irrespective of the underlying finite field, the algebraic properties of the elliptic curve group can be shown to exist by an application of [Bézout's Theorem](https://en.wikipedia.org/wiki/Bézout%27s_theorem#:~:text=Bézout%27s%20theorem%20is%20a%20statement,the%20degrees%20of%20the%20polynomials.). The [group operator](https://en.wikipedia.org/wiki/Algebraic_group) on points on an elliptic curve for a particular choice of field involves the intersection of lines intersecting either once, twice or thrice with the curve, granting notions of addition and doubling for the points of intersection, and giving the 'point at infinity' as the group identity. A closed form exists for computing a point double/addition in arbitrary fields (different closed forms can apply, but determined by the field's [characteristic](https://en.wikipedia.org/wiki/Characteristic_(algebra)), and the same closed form applies for all large prime fields).
 
-For example $\mathbb{F}_p$, that is the [unique](https://en.wikipedia.org/wiki/Finite_field#Existence_and_uniqueness) field with $p$ elements. The most straight-forward construction of this field is just to imagine arithmetic modulo $p$. The other finite fields used in practise in ECC are what some might call 'binary fields'. They're of the form $\mathbb{F}_{2^m}$, and will be familiar to you if you've studied AES (byte substitution is implemented by inversion modulo $\mathbb{F}_{2^8}$).
+For example $\mathbb{F}_p$, that is the [unique](https://en.wikipedia.org/wiki/Finite_field#Existence_and_uniqueness) field with $p$ elements. The most straight-forward construction of this field is arithmetic modulo $p$. The other finite fields used in practise in ECC are what some might call 'binary fields'. They're of the form $\mathbb{F}_{2^m}$. Their field structure is also used in AES through byte substitution, implemented by inversion modulo $\mathbb{F}_{2^8}$.
 
-If we allow ourselves to be reductive for just a moment, you might observe that all ECC math for a particular curve therefore can be boiled down to just efficiently implementing fixed-point arithmetic modulo a single prime constant, $p$. From here on out, I'll be speaking from this abstraction layer alone. 101 level discrete maths should be the only prereq (hopefully).
+From a performance perspective, great optimisations can be made by implementing efficient fixed-point arithmetic specialised to modulo by single prime constant, $p$. From here on out, I'll be speaking from this abstraction layer alone.
 
 ## Limbs
 
-You wish to multiply two $m$ bit numbers, have subdivided such a number into $n$ machine words in some way. Let's suppose just for now that $n$ divides $m$ neatly, then the quotient $d$ is the minimum number of bits in each machine word that will be required for representing our number. Suppose we use the straight-forward representation whereby the least significant $d$ bits are used for storing parts of our number, which we better call $x$ because this is crypto and descriptive variable names are deemed harmful apparently.
+We wish to multiply two $m$ bit numbers, have subdivided such a number into $n$ machine words in some way. Let's suppose just for now that $n$ divides $m$ neatly, then the quotient $d$ is the minimum number of bits in each machine word that will be required for representing our number. Suppose we use the straight-forward representation whereby the least significant $d$ bits are used for storing parts of our number, which we better call $x$ because this is crypto and descriptive variable names are deemed harmful apparently.
 
 $$x = \sum_{k = 0}^{n-1} 2^{dk} l_k$$
 
-If we then drop the requirement for each of our $n$ machine words (which I will henceforth also refer to as a limb to confuse you) to have no more than the least significant $d$ bits populated, we can then refer to this implementation as using 'redundant limbs', whereby the $k$-th limb has high bits which overlap with the place values represented in the $(k+1)$-th limb.
+If we then drop the requirement for each of our $n$ machine words (also referred to as a 'limb' from hereon out) to have no more than the least significant $d$ bits populated, we say that such an implementation uses 'redundant limbs', meaning that the $k$-th limb has high bits which overlap with the place values represented in the $(k+1)$-th limb.
 
 ## Multiplication (mod p)
 
 The fundamental difficulty with making modulo arithmetic fast (and maintainingly cryptographic opacity) is to do with an annoying property of multiplication.
 
-Let $a$ and $b$ be $m$-bit numbers, then $0 \leq a < 2^m$ and $0 \leq b < 2^m$, but critically we cannot say the same about $ab$. Instead, the best we can say is $0 \leq ab < 2^{2m}$. Multiplication can in the worst case double the number of bits that must be stored, unless we can reduce modulo our prime.
+Let $a$ and $b$ be $m$-bit numbers, then $0 \leq a < 2^m$ and $0 \leq b < 2^m$, but critically we cannot say the same about $ab$. Instead, the best we can say is that $0 \leq ab < 2^{2m}$. Multiplication can in the worst case double the number of bits that must be stored, unless we can reduce modulo our prime.
 
 If we begin with non-redundant, 56-bit limbs, then for $a$ and $b$ not too much larger than $2^{384} > p_{384}$ that are 'reduced sufficiently' then we can multiply our limbs in the following ladder, so long as we are capable of storing the following sums without overflow.
 
@@ -164,7 +164,7 @@ $$2^{384} = 2^{48}t^6 \equiv 2^{16}t^2 + 2^{40}t + (-2^{32} + 1) \mod{f(t)}$$
 
 #### Carries
 
-Finally, as each of `acc[0], ..., acc[6]` can contain values larger than `2^{56}`, we carry their respective high bits into `acc[6]` so as to remove any redundancy. Conveniently, our preemptive carrying before the third substitution has granted us a pretty tight bound on our final calculation - the final reduced number has the range $[0, 2^{384}]$.
+Finally, as each of `acc[0], ..., acc[6]` can contain values larger than $2^{56}$, we carry their respective high bits into `acc[6]` so as to remove any redundancy. Conveniently, our preemptive carrying before the third substitution has granted us a pretty tight bound on our final calculation - the final reduced number has the range $[0, 2^{384}]$.
 
 #### Canonicalisation
 
@@ -211,4 +211,4 @@ We can then subtract values whose limbs are no larger than the least of these li
 
 Cryptographic routines must perform all of their calculations in constant time. More specifically, it is important that timing cryptography code should not reveal any private keys or random nonces used during computation. Ultimately, all of our work so far has been to speed-up field arithmetic in the modulo field with prime $p_{384}$. But this is done in order to facilitate calculations in the secp384r1 elliptic curve, and ECDSA/ECDH each depend on being able to perform scalar 'point multiplication' (repeat application of the group operator). Since such an operation is inherently iterative, it presents the greatest potential for timing attacks.
 
-Simply put, we implement constant-time multiplication with the *wNAF* ladder method. This relies on pre-computing a window of multiples of the group generator, and then scaling and selectively adding multiples when required. [Wikipedia](https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication#Point_multiplication) provides a helpful primer to this method that cumulatively builds upon more naive approaches.
+We implement constant-time multiplication with the *wNAF* ladder method. This relies on pre-computing a window of multiples of the group generator, and then scaling and selectively adding multiples when required. [Wikipedia](https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication#Point_multiplication) provides a helpful primer to this method  by cumulatively building upon more naive approaches.
