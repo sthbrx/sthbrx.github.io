@@ -1,6 +1,6 @@
 Title: Going out on a Limb: Efficient Elliptic Curve Arithmetic in OpenSSL
 Authors: Rohan McLure
-Date: 2023-08-03 13:15
+Date: 2023-08-04 13:15
 Category: Cryptography
 
 So I've just submitted a [pull request](https://github.com/openssl/openssl/pull/21471) to OpenSSL for a new strategy I've been developing for efficient arithmetic used in secp384r1, a curve prescribed by NIST for digital signatures and key exchange. In spite of its prevalence, its implementation in OpenSSL has remained somewhat unoptimised, even as less frequently used curves (P224, P256, P521) each have their own optimisations.
@@ -15,13 +15,13 @@ When it comes to cryptography, it's highly likely that those with a computer sci
 
 The word 'Elliptic' may seem to imply continuous mathematics. As a useful cryptographic problem, we fundamentally are just interested with the algebraic properties of these curves, whose points are elements of a [finite field](https://en.wikipedia.org/wiki/Finite_field). Irrespective of the underlying finite field, the algebraic properties of the elliptic curve group can be shown to exist by an application of [Bézout's Theorem](https://en.wikipedia.org/wiki/Bézout%27s_theorem#:~:text=Bézout%27s%20theorem%20is%20a%20statement,the%20degrees%20of%20the%20polynomials.). The [group operator](https://en.wikipedia.org/wiki/Algebraic_group) on points on an elliptic curve for a particular choice of field involves the intersection of lines intersecting either once, twice or thrice with the curve, granting notions of addition and doubling for the points of intersection, and giving the 'point at infinity' as the group identity. A closed form exists for computing a point double/addition in arbitrary fields (different closed forms can apply, but determined by the field's [characteristic](https://en.wikipedia.org/wiki/Characteristic_(algebra)), and the same closed form applies for all large prime fields).
 
-Our algorithm uses a field of the form $\mathbb{F}_p$, that is the [unique](https://en.wikipedia.org/wiki/Finite_field#Existence_and_uniqueness) field with $p$ (a prime) elements. The most straight-forward construction of this field is arithmetic modulo $p$. The other finite fields used in practise in ECC are of the form $\mathbb{F}_{2^m}$ and are sometimes called 'binary fields' (representible as polynomials with binary coefficients). Their field structure is also used in AES through byte substitution, implemented by inversion modulo $\mathbb{F}_{2^8}$.
+Our algorithm uses a field of the form $\mathbb{F}_p$, that is the [unique](https://en.wikipedia.org/wiki/Finite_field#Existence_and_uniqueness) field with $p$ (a prime) elements. The most straightforward construction of this field is arithmetic modulo $p$. The other finite fields used in practise in ECC are of the form $\mathbb{F}_{2^m}$ and are sometimes called 'binary fields' (representible as polynomials with binary coefficients). Their field structure is also used in AES through byte substitution, implemented by inversion modulo $\mathbb{F}_{2^8}$.
 
 From a performance perspective, great optimisations can be made by implementing efficient fixed-point arithmetic specialised to modulo by single prime constant, $p$. From here on out, I'll be speaking from this abstraction layer alone.
 
 ## Limbs
 
-We wish to multiply two $m$ bit numbers and have subdivided such a number into $n$ machine words in some way. Let's suppose just for now that $n$ divides $m$ neatly, then the quotient $d$ is the minimum number of bits in each machine word that will be required for representing our number. Suppose we use the straight-forward representation whereby the least significant $d$ bits are used for storing parts of our number, which we better call $x$ because this is crypto and descriptive variable names are considered harmful (apparently).
+We wish to multiply two $m$-bit numbers, each of which represented with $n$ 64-bit machine words in some way. Let's suppose just for now that $n$ divides $m$ neatly, then the quotient $d$ is the minimum number of bits in each machine word that will be required for representing our number. Suppose we use the straightforward representation whereby the least significant $d$ bits are used for storing parts of our number, which we better call $x$ because this is crypto and descriptive variable names are considered harmful (apparently).
 
 $$x = \sum_{k = 0}^{n-1} 2^{dk} l_k$$
 
@@ -29,7 +29,7 @@ If we then drop the requirement for each of our $n$ machine words (also referred
 
 ## Multiplication (mod p)
 
-The fundamental difficulty with making modulo arithmetic fast (and maintainingly cryptographic opacity) is to do with an annoying property of multiplication.
+The fundamental difficulty with making modulo arithmetic fast is to do with the following property of multiplication.
 
 Let $a$ and $b$ be $m$-bit numbers, then $0 \leq a < 2^m$ and $0 \leq b < 2^m$, but critically we cannot say the same about $ab$. Instead, the best we can say is that $0 \leq ab < 2^{2m}$. Multiplication can in the worst case double the number of bits that must be stored, unless we can reduce modulo our prime.
 
@@ -79,7 +79,7 @@ Our prime is a _Solinas_ (_Pseudo/Generalised-Mersenne_) _Prime_. Mersenne Prime
 
 Our choice of $t$ is $2^{56}$. Wikipedia provides a ideal example of the Solinas reduction algorithm for when the bitwidth of the prime is divisible by $\log_2{t}$, but that is not our scenario. We choose 56-bits for some pretty simple realities of hardware. 56 is less than 64 (standard machine word size) but not by too much, and the difference is byte-addressible ($64-56=8$). Let me explain:
 
-## Just the right amount of Reduction (mod p)
+## Just the Right Amount of Reduction (mod p)
 
 Let's first describe the actual prime that is our modulus.
 
@@ -158,7 +158,7 @@ Again, let
 $$X_3 = \sum^{5}_{k=0}\texttt{acc[k]}t^k + (\texttt{acc[6]} \text{(low bits)})t^6$$
 $$Y_3 = 2^{48}(\texttt{acc[6]} \text{(high bits, right shifted)}) t^6$$
 
-The equation for eliminating $2^{48}t^6$ is pretty straight forward:
+The equation for eliminating $2^{48}t^6$ is pretty straightforward:
 
 $$2^{384} = 2^{48}t^6 \equiv 2^{16}t^2 + 2^{40}t + (-2^{32} + 1) \mod{f(t)}$$
 
@@ -179,13 +179,13 @@ $$G(0) \equiv b_k = q_k$$
 
 With $p_{384}$ being a Solinas'/Pseudo-Mersenne Prime, it has a large number of contiguous runs of repeated bits, so we can of course use this to massively simplify our predicate. Doing this in constant time involves some interesting bit-shifting/masking schenanigans. Essentially, you want a bit vector of all ones/zeros depending on the value of $G(384)$, we then logically 'and' with this bitmask to 'conditionally' subtract $p_{384}$ from our result.
 
-### A side note about the weird constants
+### A Side Note about the Weird Constants
 
 Okay so we're implementing our modular arithmetic with unsigned integer limbs that together represent a number of the following form:
 
 $$x = \sum_{k = 0}^{n-1} 2^{dk} l_k$$
 
-How do we then do subtractions in a way which will make overflow impossible? Well computing $a - b$ is really straight forward if every limb of $a$ is larger than every limb of $b$. We then add a suitable multiple of $p_{384}$ to $a$ that causes each limb of $a$ to be sufficiently large.
+How do we then do subtractions in a way which will make overflow impossible? Well computing $a - b$ is really straightforward if every limb of $a$ is larger than every limb of $b$. We then add a suitable multiple of $p_{384}$ to $a$ that causes each limb of $a$ to be sufficiently large.
 
 Thankfully, with redundant-limb arithmetic, we can do this easily by means of *telescopic sums*. For example, in `felem_reduce` we wanted all limbs of our $p_{384}$ multiple to be sufficiently large. We overshot any requirement and provided such a multiple which gives a lower bound $2^{123}$. We first scale our prime accordingly so that its 'lead term' (speaking in the polynomial representation) is $2^{124}$.
 
@@ -209,7 +209,7 @@ We can then subtract values whose limbs are no larger than the least of these li
 
 ## Concerning Timing Side-Channels
 
-Cryptographic routines must perform all of their calculations in constant time. More specifically, it is important that timing cryptography code should not reveal any private keys or random nonces used during computation. Ultimately, all of our work so far has been to speed-up field arithmetic in the modulo field with prime $p_{384}$. But this is done in order to facilitate calculations in the secp384r1 elliptic curve, and ECDSA/ECDH each depend on being able to perform scalar 'point multiplication' (repeat application of the group operator). Since such an operation is inherently iterative, it presents the greatest potential for timing attacks.
+Cryptographic routines must perform all of their calculations in constant time. More specifically, it is important that timing cryptography code should not reveal any private keys or random nonces used during computation. Ultimately, all of our work so far has been to speed up field arithmetic in the modulo field with prime $p_{384}$. But this is done in order to facilitate calculations in the secp384r1 elliptic curve, and ECDSA/ECDH each depend on being able to perform scalar 'point multiplication' (repeat application of the group operator). Since such an operation is inherently iterative, it presents the greatest potential for timing attacks.
 
 We implement constant-time multiplication with the *wNAF* ladder method. This relies on pre-computing a window of multiples of the group generator, and then scaling and selectively adding multiples when required. [Wikipedia](https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication#Point_multiplication) provides a helpful primer to this method  by cumulatively building upon more naive approaches.
 
