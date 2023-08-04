@@ -1,6 +1,6 @@
 Title: Going out on a Limb: Efficient Elliptic Curve Arithmetic in OpenSSL
 Authors: Rohan McLure
-Date: 2023-08-04 13:15
+Date: 2023-08-04 18:00
 Category: Cryptography
 
 So I've just submitted a [pull request](https://github.com/openssl/openssl/pull/21471) to OpenSSL for a new strategy I've been developing for efficient arithmetic used in secp384r1, a curve prescribed by NIST for digital signatures and key exchange. In spite of its prevalence, its implementation in OpenSSL has remained somewhat unoptimised, even as less frequently used curves (P224, P256, P521) each have their own optimisations.
