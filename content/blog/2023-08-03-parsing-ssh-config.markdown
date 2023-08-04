@@ -1,5 +1,5 @@
 Title: Quirks of parsing SSH configs 
-Date: 2023-08-03 00:00:00 
+Date: 2023-08-04 00:00:00 
 Authors: Benjamin Gray 
 Category: Development 
 Tags: ssh
@@ -110,27 +110,27 @@ the config.
    `Match` succeeding, its value is selected if it is the first of that config
    to be selected. So the earliest place a value is set takes priority; this may
    be a little counterintuitive if you are used to having the latest value be
-   picked, such as enable/disable command line flags tend to work.
+   picked, like enable/disable command line flags tend to work.
 
-3. When `HostName` is set, it replaces the value used in `Host` matches and the
-   `host` value in `Match` matches.
+3. When `HostName` is set, it replaces the `host` value in `Match` matches. It
+   is also used as the `Host` value during a final pass (if requested).
 
 4. The last behaviour of interest is the `Match final` rule. There are several
    conditions a `Match` statement can have, and the `final` rule says make this
    active on the final pass over the config.
 
 Wait, final pass? Multiple passes? Yes. If `final` is a condition on a `Match`,
-SSH will do another pass over the config, following all the rules above. Except
-this time all the configs we read on the first pass are still active (and can't
-be changed). But all the `Host` and `Matches` are re-evaluated, allowing other
-configs to potentially be set. I guess that means rule (1) ought to have a big
-asterisk next to it.
+SSH will do another pass over the entire config, following all the rules above.
+Except this time all the configs we read on the first pass are still active (and
+can't be changed). But all the `Host` and `Matches` are re-evaluated, allowing
+other configs to potentially be set. I guess that means rule (1) ought to have a
+big asterisk next to it.
 
 Together, these rules can lead to some quirky behaviours. Consider the following
 config
 
 ```text
-Host *.ozlabs.ibm.com
+Match host="*.ozlabs.ibm.com"
     ProxyJump proxy
 
 Host example
@@ -139,13 +139,13 @@ Host example
 
 If I run `ssh example` on the command line, will it use the proxy?
 
-By rule (1), no. When testing the first `Host` condition, our host value is
-currently `example`. It is not until we reach the `HostName` config that we
-start using `example.ozlabs.ibm.com` for any host matches.
+By rule (1), no. When testing the first `Match host` condition, our host value
+is currently `example`. It is not until we reach the `HostName` config that we
+start using `example.ozlabs.ibm.com` for these matches.
 
 But by rule (4), the answer turns into _maybe_. If we end up doing a second pass
 over the config thanks to a `Match final` that could be _anywhere_ else, we
-would now be matching `example.ozlabs.ibm.com` against the first `Host` on the
+would now be matching `example.ozlabs.ibm.com` against the first line on the
 second go around. This will pass, and, since nothing has set `ProxyJump` yet, we
 would gain the proxy.
 
@@ -158,7 +158,7 @@ first-come-first-served rule with config matches (rule 2). But if the system
 config includes a `Match final`, it will trigger the entire config to be
 re-parsed, including the user section. And it so happens that, at least on
 Fedora with the `openssh-clients` package installed, the system config does
-contain a `Match final`.
+contain a `Match final` (see `/etc/ssh/ssh_config.d`).
 
 But wait, there's more! If we want to specify a custom SSH config file, then we
 can use `-F path/to/config` in the command line. But this disables loading a
@@ -187,7 +187,8 @@ you will ever need to care about.
 
 Alright, armed now with this knowledge on SSH config parsing, we can work out
 what's going on with the extension. It ends up being a simple issue: it doesn't
-apply rule (3), so all `Host` matches are done against the original host name.
+apply rules (3) and (4), so all `Host` matches are done against the original
+host name.
 
 In my case, there are several machines behind the proxy, but they all share a
 common suffix, so I had a `Host *.ozlabs.ibm.com` rule to apply the proxy. I
@@ -209,10 +210,13 @@ output as the final config. No `Host` or `Match` or `HostName` or `Match final`
 quirks to worry about.
 
 Sure enough, if we replace the config backend with this 'native' resolver, we
-can connect to all the machines with no problem.
+can connect to all the machines with no problem. Hopefully the
+[pull request](https://github.com/jeanp413/open-remote-ssh/pull/103) to add this
+support will get accepted, and I can stop running my locally patched copy of the
+extension.
 
 In general, I'd suggest avoiding any dependency on a second pass being done on
-the config. Resolve your aliases early, so that the rest of the rules work
+the config. Resolve your aliases early, so that the rest of your matches work
 against the full hostname. If you later need to match against the name passed in
 the command line, you can use `Match originalhost=example`. The example above
 should always be written as
@@ -221,9 +225,13 @@ should always be written as
 Host example
     HostName example.ozlabs.ibm.com
 
-Host *.ozlabs.ibm.com
+Match host="*.ozlabs.ibm.com"
     ProxyJump proxy
 ```
 
 even if the reversed order might appear to work thanks to the weird interactions
-described above.
+described above. And after learning these parser quirks, I find the idea of
+using `Host` match statements unreliable; that they may or may not be run
+against the `HostName` value allows for truely strange bugs to appear. Maybe you
+should remove this uncertainty by starting your config with `Match final` to at
+least always be parsed the same way.
