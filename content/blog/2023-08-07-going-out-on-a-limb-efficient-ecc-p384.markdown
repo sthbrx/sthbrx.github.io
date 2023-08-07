@@ -1,9 +1,9 @@
 Title: Going out on a Limb: Efficient Elliptic Curve Arithmetic in OpenSSL
 Authors: Rohan McLure
-Date: 2023-08-04 18:00
+Date: 2023-08-07 12:00
 Category: Cryptography
 
-So I've just submitted a [pull request](https://github.com/openssl/openssl/pull/21471) to OpenSSL for a new strategy I've been developing for efficient arithmetic used in secp384r1, a curve prescribed by NIST for digital signatures and key exchange. In spite of its prevalence, its implementation in OpenSSL has remained somewhat unoptimised, even as less frequently used curves (P224, P256, P521) each have their own optimisations.
+So I've just managed to upstream some changes to OpenSSL for a [new strategy](https://github.com/openssl/openssl/blob/master/crypto/ec/ecp_nistp384.c) I've developed for efficient arithmetic used in secp384r1, a curve prescribed by NIST for digital signatures and key exchange. In spite of its prevalence, its implementation in OpenSSL has remained somewhat unoptimised, even as less frequently used curves (P224, P256, P521) each have their own optimisations.
 
 The strategy I have used could be called a 56-bit redundant limb implementation with _Solinas reduction_. Without too much micro-optimisation, we get ~5.5x speedup over the default (Montgomery Multiplication) implementation for creation of digital signatures.
 
@@ -77,7 +77,7 @@ But we can't keep doing our sums in redundant limb arithmetic forever, we must e
 
 Our prime is a _Solinas_ (_Pseudo/Generalised-Mersenne_) _Prime_. Mersenne Primes are primes expressible as $2^m - 1$. This can be generalised to low-degree polynomials in $2^m$. For example, another NIST curve uses $p_{224} = 2^{224} - 2^{96} + 1$ (a 224-bit number) where $p_{224} = f(2^{32})$ for $f(t) = t^7 - t^3 + 1$. The simpler the choice of polynomial, the simpler the modular reduction logic.
 
-Our choice of $t$ is $2^{56}$. Wikipedia provides a ideal example of the Solinas reduction algorithm for when the bitwidth of the prime is divisible by $\log_2{t}$, but that is not our scenario. We choose 56-bits for some pretty simple realities of hardware. 56 is less than 64 (standard machine word size) but not by too much, and the difference is byte-addressible ($64-56=8$). Let me explain:
+Our choice of $t$ is $2^{56}$. [Wikipedia](https://en.wikipedia.org/wiki/Solinas_prime#Modular_reduction_algorithm) the ideal case for Solinas reduction where the bitwidth of the prime is divisible by $\log_2{t}$, but that is not our scenario. We choose 56-bits for some pretty simple realities of hardware. 56 is less than 64 (standard machine word size) but not by too much, and the difference is byte-addressible ($64-56=8$). Let me explain:
 
 ## Just the Right Amount of Reduction (mod p)
 
@@ -149,7 +149,7 @@ But this time, $\delta Y_2$ is a number that comfortably can take up just five l
 
 #### Third Substitution
 
-Finally, let's reduce all the high bits of `in[6]`. Since `in[6]` has place value `t^6 = 2^{336}`, thus we wish to reduce all but the least significant $384 - 336 = 48$ bits.
+Finally, let's reduce all the high bits of `in[6]`. Since `in[6]` has place value $t^6 = 2^{336}$, thus we wish to reduce all but the least significant $384 - 336 = 48$ bits.
 
 A goal in designing this algorithm is to ensure that `acc[6]` has as tight a bound as reasonably possible. Intuitively, if we can cause `acc[6]` to be as large as possible by absorbing the high bits of lower limbs, we reduce the number of bits that must be carried forward later on. As such, we perform a carry of the high-bits of `acc[4]`, `acc[5]` into `acc[6]` before we begin our substitution.
 
