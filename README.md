@@ -26,10 +26,10 @@ Add images to the directory `content/images/{meaningful title}/`.
 To preview:
 
 ```
-make html devserver
+make watch
 ```
 
-Examine at `http://localhost:8000/blog/{YYYY}/{MM}/{DD}/{meaningful title}/`.
+Examine at `http://localhost:8000`.
 
 Edit/rinse/repeat.
 
