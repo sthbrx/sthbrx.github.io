@@ -1,0 +1,3 @@
+pelican[markdown]
+pelican-render-math
+beautifulsoup4
