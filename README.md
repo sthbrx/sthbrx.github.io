@@ -1,39 +1,40 @@
-Guide for documentation writers:
+# Guide for blog writers
 
-# Setting up an environment:
+## Setting up an environment:
 
-git clone --recurse-submodules git@github.com:sthbrx/sthbrx-blog.git
+```
+git clone --recurse-submodules git@github.com:sthbrx/sthbrx.github.io.git
+```
 
 if you already have this cloned, git submodule update
 
-Install pelican (package: python[2|3]-pelican) for local testing, as well
-as markdown support for Python (either "pip install markdown" or a package
-from your distro).
+Install pelican (with pelican-render-math) and the Python markdown package for local testing.
+You can do this through `pip install -r requirements.txt` or through your distro.
 
-# Create a document:
+## Create a document:
 
 Get up to date:
 
+```
 git pull --recurse-submodules
+```
 
-edit your document content/blog/{YYYY}-{MM}-{DD}-{meaningful title}.markdown
+Create your post in: `content/blog/{YYYY}-{MM}-{DD}-{meaningful title}.markdown`.
 
-add images to directory content/images/{meaningful title}/
+Add images to the directory `content/images/{meaningful title}/`.
 
-View:
+To preview:
 
+```
 make html devserver
+```
 
-Examine at http://localhost:8000/blog/{YYYY}/{MM}/{DD}/{meaningful title}/
+Examine at `http://localhost:8000/blog/{YYYY}/{MM}/{DD}/{meaningful title}/`.
 
-edit/rinse/repeat.
+Edit/rinse/repeat.
 
-# Publishing:
+## Publishing:
 
-Note: asking people to review your blog post before release into the wild optional but preferred! 
+*Note:* asking people to review your blog post before release into the wild is preferred!
 
-In output directory 'git add' required files, commit and push.
-
-In top level directory, 'git add' the source files, images and the output directory.
-
-git commit && push this.
+`git add` the source files and images, then push it to a new branch and open a PR for review.
