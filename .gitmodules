@@ -1,6 +1,3 @@
-[submodule "output"]
-	path = output
-	url = git@github.com:sthbrx/sthbrx.github.io.git
 [submodule "pelican-octopress-theme"]
 	path = pelican-octopress-theme
 	url = git@github.com:sthbrx/pelican-octopress-theme.git
