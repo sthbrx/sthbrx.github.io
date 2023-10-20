@@ -6,7 +6,7 @@ SITENAME = u'Store Halfword Byte-Reverse Indexed'
 SITEURL = 'https://sthbrx.github.io'
 SITESUBTITLE = 'A Power Technical Blog'
 
-DISQUS_SITENAME = 'sthbrx'
+# DISQUS_SITENAME = 'sthbrx'
 
 PATH = 'content'
 STATIC_PATHS = ['images', 'misc']
