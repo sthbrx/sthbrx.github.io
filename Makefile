@@ -1,4 +1,5 @@
 PY?=python
+VENV?=venv
 PELICAN?=pelican
 PELICANOPTS=
 
@@ -7,6 +8,7 @@ INPUTDIR=$(BASEDIR)/content
 OUTPUTDIR=$(BASEDIR)/output
 CONFFILE=$(BASEDIR)/pelicanconf.py
 PUBLISHCONF=$(BASEDIR)/publishconf.py
+PY_VENV=. $(VENV)/bin/activate
 
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
@@ -22,6 +24,7 @@ help:
 	@echo 'Makefile for a pelican Web site                                           '
 	@echo '                                                                          '
 	@echo 'Usage:                                                                    '
+	@echo '   make install                        Install dependencies               '
 	@echo '   make html                           (re)generate the web site          '
 	@echo '   make clean                          remove the generated files         '
 	@echo '   make regenerate                     regenerate files upon modification '
@@ -32,19 +35,33 @@ help:
 	@echo 'Set the RELATIVE variable to 1 to enable relative urls                    '
 	@echo '                                                                          '
 
-html:
-	$(PELICAN) $(INPUTDIR) -o $(OUTPUTDIR) -s $(CONFFILE) $(PELICANOPTS)
+html: install
+	$(PY_VENV) && $(PELICAN) $(INPUTDIR) -o $(OUTPUTDIR) -s $(CONFFILE) $(PELICANOPTS)
 
 clean:
 	[ ! -d $(OUTPUTDIR) ] || rm -rf $(OUTPUTDIR)
 
-regenerate:
-	$(PELICAN) -r $(INPUTDIR) -o $(OUTPUTDIR) -s $(CONFFILE) $(PELICANOPTS)
+regenerate: install
+	$(PY_VENV) && $(PELICAN) -r $(INPUTDIR) -o $(OUTPUTDIR) -s $(CONFFILE) $(PELICANOPTS)
 
-watch:
-	$(PELICAN)  $(PELICANOPTS) --relative-urls --listen --autoreload -s $(CONFFILE) $(INPUTDIR) -o $(OUTPUTDIR)
+watch: install
+	$(PY_VENV) && $(PELICAN)  $(PELICANOPTS) --relative-urls --listen --autoreload -s $(CONFFILE) $(INPUTDIR) -o $(OUTPUTDIR)
 
-publish:
-	$(PELICAN) $(INPUTDIR) -o $(OUTPUTDIR) -s $(PUBLISHCONF) $(PELICANOPTS)
+publish: install
+	$(PY_VENV) && $(PELICAN) $(INPUTDIR) -o $(OUTPUTDIR) -s $(PUBLISHCONF) $(PELICANOPTS)
 
-.PHONY: html help clean regenerate watch publish
+pelican-octopress-theme/.git: .gitmodules
+	git submodule update --init
+
+submodules: pelican-octopress-theme/.git
+
+$(VENV)/makestamp: requirements.txt
+	[ -d $(VENV) ] || $(PY) -m venv $(VENV)
+	$(PY_VENV) && pip install -r requirements.txt
+	touch $(VENV)/makestamp
+
+venv: $(VENV)/makestamp
+
+install: venv submodules
+
+.PHONY: html help clean install regenerate watch publish venv submodules
