@@ -1,4 +1,4 @@
-Title: Context switching SPRs on PowerPC
+Title: Context switching tasks on PowerPC
 Date: 2023-11-28 08:00:00
 Authors: Benjamin Gray
 Category: Development
@@ -48,38 +48,92 @@ stored for the task being switched in.
 
 ## Processes, threads, and tasks
 
-Task? Don't you mean process/thread?
+To understand the difference between these three concepts, we'll start with how
+the kernel sees everything: tasks. Tasks are the kernel's view of an executable
+unit, respresented by a `struct task_struct`. This is an enormous struct (around
+10K bytes) of all the pieces of data people have wanted to associate with a
+particular unit of execution over the decades. The architecture specific state
+of the task is stored in a one-to-one mapped `struct thread_struct`, available
+through the `thread` member in the `task_struct`. The name 'thread' when
+referring to this structure on a task should not be confused with the concept of
+a thread we'll visit shortly.
 
-Tasks are the kernel's view of executable units. A task in the kernel is
-respresented by a `struct task_struct`. This is an enormous struct (around 10K
-bytes) of all the pieces of data people have wanted to associate with a
-particular thread of execution over the decades. In a completely reasonable and
-not-confusing-at-all decision, the architecture specific state of the task is
-stored in a one-to-one mapped `struct thread_struct`. This lives as the `thread`
-member at the bottom of the `task_struct`, as certain architectures (*cough,
-x86, cough*) make it a variable-sized struct. The relationship between different
-tasks in the form of process groups, resource sharing, and so on is handled by
-various lists and reference counted structures the task owns/has handles for.
-The kernel is quite flexible in this regard, allowing a high degree of mixing
-and matching of resources between tasks.
+A kernel task is highly flexible in terms of resource sharing. Many resources,
+such as the memory mappings and file descriptor tables, are held through
+reference counted handles to a backing data structure. This makes it easy to
+mix-and-match sharing of different components between other tasks.
 
-In this framing, a userspace thread is just a task that happens to have
-userspace memory mappings and run in problem state (simplified, of course). But
-what is a process then? Processes and threads are easy to muddle up, especially
-because lots of documentation doesn't emphasise the difference all that much.
-For our purposes, a userspace thread can be considered the fundamental unit of
-'execution context', directly mapping to a task internally. A process group is a
-group of one or more threads created using the `clone` family of syscalls.
-Threads in a process group all share a _process_ ID, but have individual
-_thread_ IDs. Other things that may be shared in a process group are the file
-descriptor table, memory mappings, and a whole slew of resources you can read
-more about on the `clone(2)` manpage.
+Crossing over to userspace, here we think of execution in terms of processes and
+threads. Typically, a process is viewed as an execution context that is isolated
+from other processes. For example, when created with the `fork()` syscall, the
+child process gains a independent copy of the parent process's state. It will
+share memory and open files at the time of the fork, but further changes to
+these resources in either process are not reflected in the other. Internally,
+the kernel simply duplicates the parent's task, and replaces relevant resources
+with copies of the parent's values.
 
-Realistically though, no one will be using the exact same terminology. You'll
-see a thread be called a process just as often as not, and the collection of
-processes sharing resources a thread group. This is all really just to say that
-when we start looking at tasks and threads below remember they are effectively
-the same thing.
+> Aside: for memory mappings the kernel uses copy-on-write (COW) to avoid
+> duplicating all of the memory of the parent process. But from the point of
+> view of the processes, it is no longer shared.
+
+It is often useful to have multiple units of execution share things like memory
+and open files though: this is what threads provide. A process can be 'split'
+into multiple threads, each backed by its own kernel task. These threads can
+share resources that are normally isolated between processes. In the lense of
+multithreading, a 'process' as above is really a 'process group' containing one
+or more threads.
+
+The thread creation mechanism is very similar to process creation. The `clone()`
+family of syscalls allow creating a new thread that shares resources with the
+thread that cloned itself. Exactly what resources get shared between threads is
+highly configurable, thanks to the kernel's task representation. See the
+[`clone(2)` manpage](https://man7.org/linux/man-pages/man2/clone.2.html) for all
+the options. Creating a process can be thought of as creating a thread where
+nothing is shared. In fact, that's how `fork()` is implemented under the hood:
+the `fork()` syscall is implemented as a thin wrapper around `clone()`'s
+implementation where nothing is shared, including the process group ID.
+
+```c
+// kernel/fork.c  (approximately)
+
+SYSCALL_DEFINE0(fork)
+{
+	struct kernel_clone_args args = {
+		.exit_signal = SIGCHLD,
+	};
+
+	return kernel_clone(&args);
+}
+
+SYSCALL_DEFINE2(clone3, struct clone_args __user *, uargs, size_t, size)
+{
+	int err;
+
+	struct kernel_clone_args kargs;
+	pid_t set_tid[MAX_PID_NS_LEVEL];
+
+	kargs.set_tid = set_tid;
+
+	err = copy_clone_args_from_user(&kargs, uargs, size);
+	if (err)
+		return err;
+
+	if (!clone3_args_valid(&kargs))
+		return -EINVAL;
+
+	return kernel_clone(&kargs);
+}
+
+pid_t kernel_clone(struct kernel_clone_args *args) {
+	// do the clone
+}
+```
+
+That's about it for the differences in processes, threads, and tasks from the
+point of view of the kernel. A key takeaway here is that, while you will often
+see processes and threads discussed with regards to userspace programs, there is
+very little difference under the hood. To the kernel, it's all just tasks with
+various degrees of shared resources.
 
 
 ## Anatomy of a context switch
