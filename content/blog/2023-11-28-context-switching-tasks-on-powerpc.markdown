@@ -79,9 +79,7 @@ with copies of the parent's values.
 It is often useful to have multiple units of execution share things like memory
 and open files though: this is what threads provide. A process can be 'split'
 into multiple threads, each backed by its own kernel task. These threads can
-share resources that are normally isolated between processes. In the lense of
-multithreading, a 'process' as above is really a 'process group' containing one
-or more threads.
+share resources that are normally isolated between processes.
 
 The thread creation mechanism is very similar to process creation. The `clone()`
 family of syscalls allow creating a new thread that shares resources with the
