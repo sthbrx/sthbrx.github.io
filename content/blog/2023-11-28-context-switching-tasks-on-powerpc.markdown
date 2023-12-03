@@ -50,7 +50,7 @@ stored for the task being switched in.
 
 To understand the difference between these three concepts, we'll start with how
 the kernel sees everything: tasks. Tasks are the kernel's view of an executable
-unit, respresented by a `struct task_struct`. This is an enormous struct (around
+unit, represented by a `struct task_struct`. This is an enormous struct (around
 10K bytes) of all the pieces of data people have wanted to associate with a
 particular unit of execution over the decades. The architecture specific state
 of the task is stored in a one-to-one mapped `struct thread_struct`, available
