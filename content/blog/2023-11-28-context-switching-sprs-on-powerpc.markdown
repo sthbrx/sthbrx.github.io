@@ -172,10 +172,10 @@ execution that defines (among other things) how to set up the state of
 the CPU.
 
 This function starts off with some generic preparation and memory context
-changes, before getting to the meat of the function with `switch_to(prev, next,
-prev)`. This `switch_to()` call is actually a macro, which unwraps to a call to
-`__switch_to()`. It's also at this point that we enter the architecture specific
-implementation.
+changes, before getting to the meat of the function with
+`switch_to(prev, next,prev)`. This `switch_to()` call is actually a macro, which
+unwraps to a call to `__switch_to()`. It's also at this point that we enter the
+architecture specific implementation.
 
 > Aside: Changing the active memory mapping has no immediate effect on the
 > running code due to address space quadrants. In the hardware, the top two bits
@@ -184,9 +184,8 @@ implementation.
 > 0) then the configured mapping is used. But if it is a kernel address (top two
 > bits are 1) then the PID 0 mapping is always used. So our change to the memory
 > mapping only applies once we return to userspace, or try to access memory
-> through a userspace address (through `get_user()` and `put_user()`). The other
-> two values (0b01 and 0b10) are used by the hypervisor to control whether it
-> wants to use the hypervisor or supervisor state mappings.
+> through a userspace address (through `get_user()` and `put_user()`). The
+> hypervisor has similar quadrant functionality, but different rules.
 
 ```c
 // arch/powerpc/include/asm/switch_to.h  (switch_to)
@@ -203,7 +202,7 @@ Once again, we'll skip through most of the implementation. You'll see a few odds
 and ends being handled: asserting we won't be taking any interrupts, handling
 some TLB flushing, a copy-paste edge case, and some breakpoint handling on
 certain platforms. Then we reach what we were looking for: `save_sprs()`. The
-whole section looks something like as follows
+relevant section looks something like as follows
 
 ```c
 	/*
@@ -339,8 +338,8 @@ values of the currently running task into its associated `task_struct`. Then we
 do a series of `mtspr` operations to deserialize the desired values of the new
 task back into the CPU.
 
-This procedure has two interesting optimisations, as explained by [the
-commit](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?h=v6.7-rc3&id=152d523e6307)
+This procedure has two interesting optimisations, as explained by
+[the commit](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?h=v6.7-rc3&id=152d523e6307)
 that introduces `save_sprs()` and `restore_sprs()`:
 
 > powerpc: Create context switch helpers save_sprs() and restore_sprs()
@@ -364,7 +363,7 @@ in response to events or changes in CPU state. For example, condition flags on
 arithmetic operations are reflected in the Condition Register (CR). Other times
 they might be directly accessible to userspace, which can set them arbitrarily
 without kernel knowledge. Some of these SPRs are also 'uninteresting' to the
-kernel, so it does not preserve them with the rest of the registers on
+kernel, so it does not preserve them with the rest of the GPRs and highly used SPRs.
 
 
 ## Did you catch the issue with `restore_sprs()`?
@@ -392,10 +391,11 @@ struct task_struct *__switch_to(struct task_struct *prev,
 ```
 
 What gives? As far as I can determine, we require that the `prev` argument to
-`__switch_to` is always the currently running task. And on PowerPC, we can
-access the currently running task's thread struct through the `current` macro.
-So, in theory, `current->thread` is an alias for `prev->thread`. Anything else
-wouldn't make any sense here, as we are storing the SPR values into
+`__switch_to` is always the currently running task (as opposed being in some
+dedicated handler or ill-defined task state during the switch). And on PowerPC,
+we can access the currently running task's thread struct through the `current`
+macro. So, in theory, `current->thread` is an alias for `prev->thread`. Anything
+else wouldn't make any sense here, as we are storing the SPR values into
 `prev->thread`, but making decisions about their values in `restore_sprs()`
 based on the `current->thread` serialised values.
 
@@ -423,9 +423,10 @@ tasks, and the whole situation with `prev` vs `old_thread`.
 
 ## Bonus tidbit
 
-The kernel's implementation of doubly-linked lists does not follow the classic
-implementation, where a list node contains a next, previous, and data pointer.
-No, if you look at the actual struct definition you will find
+This is completely unrelated, but the kernel's implementation of doubly-linked
+lists does not follow the classic implementation, where a list node contains a
+next, previous, and data pointer. No, if you look at the actual struct
+definition you will find
 
 ```c
 struct hlist_node {
