@@ -1,4 +1,4 @@
-Title: Context switching tasks on PowerPC
+Title: Context switching SPRs on PowerPC
 Date: 2023-11-28 08:00:00
 Authors: Benjamin Gray
 Category: Development
@@ -23,7 +23,10 @@ per-task support for these SPRs, despite the hardware being per-CPU. The kernel
 simply has to save the values when switching out a task, and set up the values
 stored for the task being switched in.
 
-Unless you're a long time kernel developer, chances are you haven't heard of or looked too closely at a 'task' in the kernel. The next section gives a rundown of tasks and processes, giving you a better frame of reference for the later context switching discussion.
+Unless you're a long time kernel developer, chances are you haven't heard of or
+looked too closely at a 'task' in the kernel. The next section gives a rundown
+of tasks and processes, giving you a better frame of reference for the later
+context switching discussion.
 
 
 ## Processes, threads, and tasks
@@ -117,9 +120,29 @@ various degrees of shared resources.
 
 ## Special Purpose Registers (SPRs)
 
-As a final prerequisite, in this section we look at SPRs. The SPRs are CPU registers that, to put it simply, provide a catch-all set of functionalities for interacting with the CPU. They tend to affect or reflect the CPU state in various ways, though are very diverse in behaviour and purpose. Some SPRs, such as the Link Register (LR), are similar to GPRs in that you can read and write arbitrary data. They might have special interations with certain instructions, such as the LR value being used as the branch target address of the `blr` (branch to LR) instruction. Others might provide a way to view or interact with more fundamental CPU state, such as the Authority Mask Register (AMR) which the kernel uses to disable accesses to userspace memory while in supervisor mode.
+As a final prerequisite, in this section we look at SPRs. The SPRs are CPU
+registers that, to put it simply, provide a catch-all set of functionalities for
+interacting with the CPU. They tend to affect or reflect the CPU state in
+various ways, though are very diverse in behaviour and purpose. Some SPRs, such
+as the Link Register (LR), are similar to GPRs in that you can read and write
+arbitrary data. They might have special interations with certain instructions,
+such as the LR value being used as the branch target address of the `blr`
+(branch to LR) instruction. Others might provide a way to view or interact with
+more fundamental CPU state, such as the Authority Mask Register (AMR) which the
+kernel uses to disable accesses to userspace memory while in supervisor mode.
 
-Most SPRs are per-CPU, much like GPRs. And, like GPRs, it makes sense for many of them to be tracked per-task, so that we can conceptually treat them as a per-task resource. But, depending on the particular SPR, writing to them can be _slow_. The highly used data-like SPRs like LR, CTR (Count Register), etc., are possible to [rename](https://en.wikipedia.org/wiki/Register_renaming), making them comparable to GPRs in terms of read/write performance. But others that affect the state of large parts of the CPU core, such as the [Data Stream Control Register (DSCR)](https://docs.kernel.org/next/powerpc/dscr.html), can take a while for the effects of changing them to be applied. Well, not so slow that you will notice the occasional access, but there's one case in the kernel that occurs extremely often and needs to change a lot of these SPRs to support our per-task abstraction: context switches.
+Most SPRs are per-CPU, much like GPRs. And, like GPRs, it makes sense for many
+of them to be tracked per-task, so that we can conceptually treat them as a
+per-task resource. But, depending on the particular SPR, writing to them can be
+_slow_. The highly used data-like SPRs such as LR, CTR (Count Register), etc.,
+are possible to [rename](https://en.wikipedia.org/wiki/Register_renaming),
+making them comparable to GPRs in terms of read/write performance. But others
+that affect the state of large parts of the CPU core, such as the [Data Stream
+Control Register (DSCR)](https://docs.kernel.org/next/powerpc/dscr.html), can
+take a while for the effects of changing them to be applied. Well, not so slow
+that you will notice the occasional access, but there's one case in the kernel
+that occurs extremely often and needs to change a lot of these SPRs to support
+our per-task abstraction: context switches.
 
 
 ## Anatomy of a context switch
@@ -144,8 +167,8 @@ context_switch(struct rq *rq, struct task_struct *prev,
 ```
 
 Along with some scheduling metadata, we see it takes a previous task and a next
-task. As we discussed above, the `struct task_struct` type describes an
-execution context that defines (among other things) how to set up the state of
+task. As we discussed above, the `struct task_struct` type describes a unit of
+execution that defines (among other things) how to set up the state of
 the CPU.
 
 This function starts off with some generic preparation and memory context
