@@ -9,8 +9,7 @@ Tags: linux
 CPU cores are very limited in number. Right now my computer tells me it's
 running around 500 processes, and I definitely do not have that many CPU cores.
 The ability for the operating system to virtualise the concept of an 'execution
-unit' and swap them in and out of running on the limited pool CPU cores is one
-of the foundations of modern computing.
+unit' and swap them in and out of running on the limited pool of CPU cores is one of the foundations of modern computing.
 
 The Linux kernel calls these virtual execution units _tasks_. Each task
 encapsulates all the information the kernel needs to swap it in and out of
@@ -22,45 +21,76 @@ scheduler to determine when and where to run tasks according to some parameters,
 such as maximising throughput, minimising latency, or whatever other
 characteristics the user desires.
 
-In this article, we'll dive into the lifecycle of a task in the kernel.
+In this article, we'll dive into the lifecycle of a task in the kernel. This is a PowerPC blog, so any architecture specific (often shortened to 'arch') references are referring to PowerPC.
 
 
 ## Booting
 
 The kernel starts up with no concept of tasks, just running from whatever
 location the bootloader decided to start it at. The first idea of a task takes
-root in `early_setup()` (`arch/powerpc/kernel/setup_64.c`), where we initialise
-the processor address communications area (PACA). We use the PACA to (among
-other things) hold a reference to the active task, and the task we start with is
-the special `init_task`. This task is a statically defined instance of a
+root in `early_setup()` where we initialise the PACA (what this is short for is
+unclear).
+
+```c
+__start()  // AKA address 0; in first_256B section
+  __start_initialization_multiplatform()
+    __after_prom_start()
+      start_here_multiplatform()
+        early_setup()   // switched to C here
+          initialise_paca()
+            new_paca->__current = &init_task;
+```
+
+We use the PACA to (among other things) hold a reference to the active task, and
+the task we start with is the special `init_task`. To avoid ambiguity with the
+userspace init task we see later, I'll refer to `init_task` as the _boot task_
+from here onwards. This boot task is a statically defined instance of a
 `task_struct` that is the root of all future tasks. Its resources are various
 `init_*` versions of things, themselves each statically defined somewhere. We
-aren't really taking advantage of tasks at this point, it's more about making it
-look like we're a task for any initialisation code that cares.
+aren't taking advantage of the context switching capability of tasks this early
+in boot, we just need to look like we're a task for any initialisation code that
+cares. For now we continue to work as a single CPU core with a single task.
 
-From here we continue on with the boot process. At some point we allocate a PACA
-for each CPU; these all get the `init_task` task as well (all referencing the
-same structure, not copies of it).
+We continue on and reach `start_kernel()`, the generic entry point of the kernel
+once any arch specific bootstrapping is sufficiently complete. One of the first
+things we call here is `setup_arch()`, which continues any initialisation that
+still needs to occur. This is where we call `smp_setup_pacas()` to allocate a
+PACA for each CPU; these all get the boot task as well (all referencing the same
+`init_task` structure, not copies of it). Eventually they will be given their
+own independent tasks, but during most of boot we don't do anything on them so
+it doesn't matter for now.
 
-The next point of interest is `fork_init()`. This is one of the initialisation
-functions in `start_kernel()`, the generic entry point of the kernel once any
-arch specific setup is done. Here we create a `task_struct` allocator to serve
-any task creation requests. We also limit the number of tasks here, dynamically
-picking the limit based on the available memory, page size, and a fixed upper
-bound.
+The next point of interest back in `start_kernel()` is `fork_init()`. Here we
+create a `task_struct` allocator to serve any task creation requests. We also
+limit the number of tasks here, dynamically picking the limit based on the
+available memory, page size, and a fixed upper bound.
 
-Towards the end of the init sequence we reach `rest_init()`. In here we finally
-dynamically create our first two tasks: the init task (not to be confused with
-`init_task`), and the kthreadd task (with the double 'd'). The init task is
-(eventually) the userspace init process. We create it first to get the PID value
-1, which is relied on by a number of things in the kernel and in userspace[^5].
-The kthreadd task provides an asynchronous creation mechanism for kthreads:
-callers append their thread parameters to a dedicated list, and the kthreadd
-task spawns any entries on the list whenever it gets scheduled. Creating the
-tasks automatically put them on the scheduler run queue, and they might even
-have started automatically with preemption.
+```c
+void __init fork_init(void) {
+	// ...
+	/* create a slab on which task_structs can be allocated */
+	task_struct_whitelist(&useroffset, &usersize);
+	task_struct_cachep = kmem_cache_create_usercopy("task_struct",
+			arch_task_struct_size, align,
+			SLAB_PANIC|SLAB_ACCOUNT,
+			useroffset, usersize, NULL);
+	// ...
+}
+```
 
-[^5]: One example of the init task being special is that the kernel will not
+At the end of `start_kernel()` we reach `rest_init()` (as in 'do the rest of the
+init'). In here we create our first two dynamically allocated tasks: the init
+task (not to be confused with `init_task`, which we are calling the boot task),
+and the kthreadd task (with the double 'd'). The init task is (eventually) the
+userspace init process. We create it first to get the PID value 1, which is
+relied on by a number of things in the kernel and in userspace[^pid1]. The
+kthreadd task provides an asynchronous creation mechanism for kthreads: callers
+append their thread parameters to a dedicated list, and the kthreadd task spawns
+any entries on the list whenever it gets scheduled. Creating these tasks
+automatically puts them on the scheduler run queue, and they might even start
+automatically with preemption.
+
+[^pid1]: One example of the init task being special is that the kernel will not
     allow its process to be killed. It must always have at least one thread.
 
 ```c
@@ -117,43 +147,53 @@ noinline void __ref __noreturn rest_init(void)
 
 ```
 
-After this, it basically just enters the scheduler. We're now almost fully task
-driven, and our journey picks back up inside of the init task.
+After this, the boot task calls `cpu_startup_entry()`, which transforms it into
+the idle task for the boot CPU and enters the idle loop. We're now almost fully
+task driven, and our journey picks back up inside of the init task.
 
-> Hint: you can see where the `init_task` vs the init task is used in the
-> console. The `init_task` has PID 0, so appears as `T0` in the log line
-> metadata. The init task has PID 1, so appears as `T1`.
+> Tip: when looking at the kernel boot console, you can tell what print actions
+> are performed by the boot task vs the init task. The `init_task` has PID 0, so
+> lines start with `T0`. The init task has PID 1, so appears as `T1`.
 
 
 ## The init task
 
 When we created the init task, we set the entry point to be the `kernel_init()`
-function. Execution simply begins from here once we get scheduled. The very
-first thing we do is wait for the kthreadd task to be up and running: bad things
-would happen if we tried to use kernel services that rely on kthreads otherwise.
+function. Execution simply begins from here[^begin] once it gets woken up for
+the first time. The very first thing we do is wait[^wait] for the kthreadd task
+to be created: if we were to try and create a kthread before this, when the
+kthread creation mechanism tries to wake up the kthreadd task it would be using
+an uninitialised pointer, causing an Oops. To prevent this, the init task waits
+on a completion object that the boot task marks completed after creating
+kthreadd. We could technically avoid this synchronization altogether just by
+creating kthreadd first, but then the init task wouldn't have PID 1.
 
-The wait mechanism itself also interacts with the scheduler a lot: starting with
-a common `struct completion` object, the waiting task registers itself as
-awaiting the object to complete. Specifically, it adds its task handle to a
-queue on the completion object. It then loops calling `schedule()`, which yields
-itself to the scheduler, until the completion object is flagged as done.
-Somewhere else, such as another task, the completion object will eventually be
-marked as completed. As part of this the task marking the completion tries to
-wake up a task that might have registered itself as waiting earlier.
+[^begin]: Well, it actually begins at a small Assembly shim, but close enough
+    for now.
 
-In the kthreadd case, the init task waits on a completion object that
-`kernel_init()` marks completed after creating kthreadd. We could technically
-avoid this synchronization altogether just by creating kthreadd first, but then
-the init task wouldn't have PID 1.
+[^wait]: The wait mechanism itself is an interesting example of interacting with
+the scheduler. Starting with a common `struct completion` object, the waiting
+task registers itself as awaiting the object to complete. Specifically, it adds
+its task handle to a queue on the completion object. It then loops calling
+`schedule()`, yielding itself to other tasks, until the completion object is
+flagged as done. Somewhere else another task marks the completion object as
+completed. As part of this, the task marking the completion tries to wake up any
+task that has registered itself as waiting earlier.
 
 The rest of the init task wraps up the initialisation stage as a whole. Mostly
 it moves the system into the 'running' state after freeing any memory marked as
-for initialisation only (set by `__init` annotations).
-
-Once fully initialised and running, the init tasks attempts to execute the
+for initialisation only (set by `__init` annotations). Once fully initialised and running, the init task attempts to execute the
 userspace init program.
 
 ```c
+	if (ramdisk_execute_command) {
+		ret = run_init_process(ramdisk_execute_command);
+		if (!ret)
+			return 0;
+		pr_err("Failed to execute %s (error %d)\n",
+		       ramdisk_execute_command, ret);
+	}
+
 	if (execute_command) {
 		ret = run_init_process(execute_command);
 		if (!ret)
@@ -181,11 +221,11 @@ userspace init program.
 	      "See Linux Documentation/admin-guide/init.rst for guidance.");
 ```
 
-There are several locations it will attempt, in order:
+What file the init process is loaded from is determined by a combination of the system's filesystem, kernel boot arguments, and some default fallbacks. The locations it will attempt, in order, are:
 
 1. Ramdisk file set by `rdinit=` boot command line parameter, with default path
-   `/init`.
-2. File set by `init=` boot command line parameter.
+   `/init`. An initcall run earlier searches the boot arguments for `rdinit` and initialises `ramdisk_execute_command` with it. If the ramdisk does not contain the requested file, then the kernel will attempt to automatically mount the root device and use it for the subsequent checks.
+2. File set by `init=` boot command line parameter. Like with `rdinit`, the `execute_command` variable is initialised by an early initcall looking for `init` in the boot arguments.
 3. `/sbin/init`
 4. `/etc/init`
 5. `/bin/init`
@@ -199,54 +239,95 @@ Should none of these work, the kernel just panics. Which seems fair.
 Until now we've focused on the boot CPU. While the utility of a task still
 applies to a uniprocessor system (perhaps even more so than one with hardware
 parallelism), a nice benefit of encapsulating all the execution state into a
-data structure is being able to load the task onto any other compatible
+data structure is the ability to load the task onto any other compatible
 processor on the system. But before we can start scheduling on other CPU cores,
 we need to bring them online and initialise them to a state ready for the
 scheduler.
 
-On a pSeries platform, the secondary CPUs are held by the firmware until
-explicitly released by the guest. During boot the boot CPU will, as part of
-`prom_init()`, call `prom_hold_cpus()`. This iterates the list of held secondary
-processors and releases them one by one to the `__secondary_hold` function in
-`arch/powerpc/kernel/head_64.S`. As each starts executing `__secondary_hold`, it
-writes a value to the `__secondary_hold_acknowledge` variable that the boot CPU
-is watching. The secondary processor then immediately starts spinning on
+On the pSeries platform, the secondary CPUs are held by the firmware until
+explicitly released by the guest. Early in boot, the boot CPU (not task! We
+don't have tasks yet) will iterate the list of held secondary processors and
+release them one by one to the `__secondary_hold` function. As each starts
+executing `__secondary_hold`, it writes a value to the
+`__secondary_hold_acknowledge` variable that the boot CPU is watching. The
+secondary processor then immediately starts spinning on
 `__secondary_hold_spinloop`, waiting for it to become non-zero, while the boot
 CPU moves on to the the next processor.
 
+```c
+// Boot CPU releasing the coprocessors from firmware
+
+__start()
+  __start_initialization_multiplatform()
+    __boot_from_prom()
+      prom_init()    // switched to C here
+        prom_hold_cpus()
+          // secondary_hold is alias for __secondary_hold Assembly function
+          call_prom("start-cpu", ..., secondary_hold, ...);  // on each coprocessor
+```
+
 Once every coprocessor is confirmed to be spinning on
 `__secondary_hold_spinloop`, the boot CPU continues on with its boot sequence.
-Eventually it reaches `smp_release_cpus()` early in `start_kernel()` through
-`setup_arch()`, which writes the desired entry point address to
-`__secondary_hold_spinloop`. All the spinning coprocessors now see this value,
-and jump to it. This function, `generic_secondary_smp_init()`, will set up the
-coprocessor's PACA value, perform some machine specific initialisation if
-`cur_cpu_spec->cpu_restore` is set[^4], atomically decrement a
-`spinning_secondaries` variable, and start spinning once again until further
-notice. This time it is waiting on the PACA field `cpu_start`, so we can start
-coprocessors individually.
+Once we reach `setup_arch()` as above, the boot task invokes
+`smp_release_cpus()` early in `start_kernel()`, which writes the desired entry
+point address of the coprocessors to `__secondary_hold_spinloop`. All the
+spinning coprocessors now see this value, and jump to it. This function,
+`generic_secondary_smp_init()`, will set up the coprocessor's PACA value,
+perform some machine specific initialisation if `cur_cpu_spec->cpu_restore` is
+set[^restore], atomically decrement a `spinning_secondaries` variable, and start
+spinning once again until further notice. This time it is waiting on the PACA
+field `cpu_start`, so we can start coprocessors individually.
 
-[^4]: The `cur_cpu_spec->cpu_restore` machine specific initialisation is based
+[^restore]: The `cur_cpu_spec->cpu_restore` machine specific initialisation is based
     on the machine that got selected in
     `arch/powerpc/kernel/cpu_specs_book3s_64.h`. This is where the
     `__restore_cpu_*` family of functions might be called, which mostly
     initialise certain SPRs to sane values.
 
-We leave the coprocessors here for another while, until we eventually get back
-to them via a hotplug codepath. This boot set of CPUs are brought online by the
-init task as one of the actions it performs in `kernel_init_freeable() ->
-smp_init()`. Once told to stop spinning there's a bit more initialisation in
-Assembly, but they reach `start_secondary()` without much hassle. After yet more
-initialisation, we finally reach `cpu_startup_entry()` and enter the idle loop.
-We're now under control of (or, in a better sense, acting as) the scheduler at
-last.
+We leave the coprocessors here for another while, until the init task calls
+`kernel_init_freeable()`. This function is used for any initialisation required
+_after_ kthreads are running, but _before_ all the `__init` sections are
+dropped. The setup relevant to coprocessors is the call to `smp_init()`. Here we
+fork the current task (the init task) once for each coprocessor with
+`idle_threads_init()`. We then call `bringup_nonboot_cpus()` to make each
+coprocessor start scheduling.
+
+The exact code paths here are both deep and indirect, so here's the interesting
+part of the call tree for the pSeries platform to help guide you through the
+code.
+
+```c
+// In the init task
+
+smp_init()
+  idle_threads_init()     // create idle task for each coprocessor
+  bringup_nonboot_cpus()  // make each coprocessor enter the idle loop
+    cpuhp_bringup_mask()
+      cpu_up()
+        _cpu_up()
+          cpuhp_up_callbacks()  // invokes the .startup.single CPUHP_BRINGUP_CPU callback
+            bringup_cpu()
+              __cpu_up()
+                cpu_idle_thread_init()  // sets CPU's task in PACA to its idle task
+                smp_ops->prepare_cpu()  // on pSeries inits Xive if in use
+                smp_ops->kick_cpu()     // indirect call to smp_pSeries_kick_cpu()
+                  smp_pSeries_kick_cpu()
+                    paca_ptrs[nr]->cpu_start = 1  // the coprocessor was spinning on this value
+```
+
+Interestingly, the entry point declared when cloning the init task for the
+coprocessors is never used. This is because the coprocessors never get woken up
+from the hand-crafted init state the way new tasks normally would. Instead they
+are already executing a code path, and so when they next yield they will just
+clobber the entry point and other registers with their actually running task
+state.
 
 
 ## Transitioning the init task to userspace
 
 The last remaining job of the kernel side of the init task is to actually load
-in and execute the userspace program. It's not like we can just call the
-userspace entry point though: we need to get a little creative here.
+in and execute the selected userspace program. It's not like we can just call
+the userspace entry point though: we need to get a little creative here.
 
 The first step has already been done for us. When we created the init task, we
 declared it to have a kernel entry point, but that it was not a kthread. The
