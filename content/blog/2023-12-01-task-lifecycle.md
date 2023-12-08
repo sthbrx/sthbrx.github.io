@@ -9,7 +9,8 @@ Tags: linux
 CPU cores are very limited in number. Right now my computer tells me it's
 running around 500 processes, and I definitely do not have that many CPU cores.
 The ability for the operating system to virtualise the concept of an 'execution
-unit' and swap them in and out of running on the limited pool of CPU cores is one of the foundations of modern computing.
+unit' and swap them in and out of running on the limited pool of CPU cores is
+one of the foundations of modern computing.
 
 The Linux kernel calls these virtual execution units _tasks_. Each task
 encapsulates all the information the kernel needs to swap it in and out of
@@ -188,8 +189,8 @@ task that has registered itself as waiting earlier.
 
 The rest of the init task wraps up the initialisation stage as a whole. Mostly
 it moves the system into the 'running' state after freeing any memory marked as
-for initialisation only (set by `__init` annotations). Once fully initialised and running, the init task attempts to execute the
-userspace init program.
+for initialisation only (set by `__init` annotations). Once fully initialised
+and running, the init task attempts to execute the userspace init program.
 
 ```c
 	if (ramdisk_execute_command) {
@@ -227,11 +228,18 @@ userspace init program.
 	      "See Linux Documentation/admin-guide/init.rst for guidance.");
 ```
 
-What file the init process is loaded from is determined by a combination of the system's filesystem, kernel boot arguments, and some default fallbacks. The locations it will attempt, in order, are:
+What file the init process is loaded from is determined by a combination of the
+system's filesystem, kernel boot arguments, and some default fallbacks. The
+locations it will attempt, in order, are:
 
 1. Ramdisk file set by `rdinit=` boot command line parameter, with default path
-   `/init`. An initcall run earlier searches the boot arguments for `rdinit` and initialises `ramdisk_execute_command` with it. If the ramdisk does not contain the requested file, then the kernel will attempt to automatically mount the root device and use it for the subsequent checks.
-2. File set by `init=` boot command line parameter. Like with `rdinit`, the `execute_command` variable is initialised by an early initcall looking for `init` in the boot arguments.
+   `/init`. An initcall run earlier searches the boot arguments for `rdinit` and
+   initialises `ramdisk_execute_command` with it. If the ramdisk does not
+   contain the requested file, then the kernel will attempt to automatically
+   mount the root device and use it for the subsequent checks.
+2. File set by `init=` boot command line parameter. Like with `rdinit`, the
+   `execute_command` variable is initialised by an early initcall looking for
+   `init` in the boot arguments.
 3. `/sbin/init`
 4. `/etc/init`
 5. `/bin/init`
@@ -284,8 +292,8 @@ set[^restore], atomically decrement a `spinning_secondaries` variable, and start
 spinning once again until further notice. This time it is waiting on the PACA
 field `cpu_start`, so we can start coprocessors individually.
 
-[^restore]: The `cur_cpu_spec->cpu_restore` machine specific initialisation is based
-    on the machine that got selected in
+[^restore]: The `cur_cpu_spec->cpu_restore` machine specific initialisation is
+    based on the machine that got selected in
     `arch/powerpc/kernel/cpu_specs_book3s_64.h`. This is where the
     `__restore_cpu_*` family of functions might be called, which mostly
     initialise certain SPRs to sane values.
@@ -422,18 +430,19 @@ return sequence to userspace. The init task is now fully userspace.
 It feels like we've spent a lot of time discussing the init task. What about all
 the other tasks?
 
-It turns out that the creation of the init task is very similar to any
-other task. All tasks are clones of the task that created them (except the
-statically defined `init_task`). Note 'clone' is being used
-in a loose sense here: it's not an exact image of the parent. There's a configuration parameter that determines which components are shared, and
-which are made into independent copies. The implementation may also just decide
-to change some things that don't make sense to duplicate, such as the task ID to distinguish it from the parent.
+It turns out that the creation of the init task is very similar to any other
+task. All tasks are clones of the task that created them (except the statically
+defined `init_task`). Note 'clone' is being used in a loose sense here: it's not
+an exact image of the parent. There's a configuration parameter that determines
+which components are shared, and which are made into independent copies. The
+implementation may also just decide to change some things that don't make sense
+to duplicate, such as the task ID to distinguish it from the parent.
 
 As we saw earlier, kthreads are created indirectly through a global list and
-kthreadd daemon task that does the actual cloning. This has two
-benefits: allowing asynchronous task creation from atomic contexts, and ensuring
-all kthreads inherit a 'clean' task context, instead of whatever was active at
-the time.
+kthreadd daemon task that does the actual cloning. This has two benefits:
+allowing asynchronous task creation from atomic contexts, and ensuring all
+kthreads inherit a 'clean' task context, instead of whatever was active at the
+time.
 
 Userspace task creation, beyond the init task, is driven by the userspace
 process invoking the `fork()` and `clone()` family of syscalls. Both of these
@@ -442,7 +451,8 @@ the creation of the init task and kthreadd.
 
 When a task runs a syscall in the `exec()` family, it doesn't create a new task.
 It instead hits the same code path as when we tried to run the userspace init
-program, where it loads in the context as defined by the program file into the current task and returns from the syscall (legitimately this time).
+program, where it loads in the context as defined by the program file into the
+current task and returns from the syscall (legitimately this time).
 
 
 ## Context switching
