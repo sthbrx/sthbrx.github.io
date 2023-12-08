@@ -21,7 +21,13 @@ scheduler to determine when and where to run tasks according to some parameters,
 such as maximising throughput, minimising latency, or whatever other
 characteristics the user desires.
 
-In this article, we'll dive into the lifecycle of a task in the kernel. This is a PowerPC blog, so any architecture specific (often shortened to 'arch') references are referring to PowerPC.
+In this article, we'll dive into the lifecycle of a task in the kernel. This is
+a PowerPC blog, so any architecture specific (often shortened to 'arch')
+references are referring to PowerPC. To make the most out of this you should
+also have a copy of the kernel source open alongside you, to get a sense of what
+else is happening in the locations we discuss below. This article hyper-focuses
+on specific details of setting up tasks, leaving out a lot of possibly related
+content. Call stacks are provided to help orient yourself in many case.
 
 
 ## Booting
