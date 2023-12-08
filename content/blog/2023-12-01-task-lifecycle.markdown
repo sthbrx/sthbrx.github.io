@@ -416,17 +416,15 @@ return sequence to userspace. The init task is now fully userspace.
 It feels like we've spent a lot of time discussing the init task. What about all
 the other tasks?
 
-It turns out that the creation of the init task lifecycle is very similar to any
+It turns out that the creation of the init task is very similar to any
 other task. All tasks are clones of the task that created them (except the
-statically defined `init_task` we set early in boot). Note clone is being used
-in a loose sense here: it's not a one-to-one image of the parent. There's
-obviously a different task ID to distinguish it from the parent, but theres's
-also a configuration parameter that determines which components are shared, and
+statically defined `init_task`). Note 'clone' is being used
+in a loose sense here: it's not an exact image of the parent. There's a configuration parameter that determines which components are shared, and
 which are made into independent copies. The implementation may also just decide
-to change some things that don't make sense to duplicate.
+to change some things that don't make sense to duplicate, such as the task ID to distinguish it from the parent.
 
 As we saw earlier, kthreads are created indirectly through a global list and
-kthreadd daemon task that does the actual cloning. This appears to have two
+kthreadd daemon task that does the actual cloning. This has two
 benefits: allowing asynchronous task creation from atomic contexts, and ensuring
 all kthreads inherit a 'clean' task context, instead of whatever was active at
 the time.
@@ -438,8 +436,7 @@ the creation of the init task and kthreadd.
 
 When a task runs a syscall in the `exec()` family, it doesn't create a new task.
 It instead hits the same code path as when we tried to run the userspace init
-program, where it loads in the context as defined by the program file and
-returns from the syscall (legitimately this time).
+program, where it loads in the context as defined by the program file into the current task and returns from the syscall (legitimately this time).
 
 
 ## Context switching
@@ -449,15 +446,17 @@ are switched in and out, and some of the rules around when it can and can't
 happen. Once the init and kthreadd tasks are created, we call
 `cpu_startup_entry(CPUHP_ONLINE)`. Any coprocessors have also been released to
 call this by now too. These are considered 'idle tasks', which serve to run when
-no other tasks are available to run. They will spin on a reschedule check,
+no other tasks are available to run. They will spin on a check for pending work,
 entering an idle state each loop until they see pending tasks to run. They then
 call `__schedule()` in a loop (also conditional on pending tasks existing), and
-then loop back to the idle loop once everything is handled.
+then return back to the idle loop once everything in the moment is handled.
 
 The `__schedule()` function is the main guts of the scheduler, which until now
-has been some nebulous controller that's governing our tasks. It starts by
-deciding which pending task should run (a whole can of worms right there), and
-then executing `context_switch()` if it changes from the current task.
+has seemed like some nebulous controller that's governing when and where our
+tasks run. In reality it isn't one isolated part of the system, but a function
+that a task calls when it decides to yield to any other waiting tasks. It starts
+by deciding which pending task should run (a whole can of worms right there),
+and then executing `context_switch()` if it changes from the current task.
 `context_switch()` is the point where the `current` task starts to change.
 Specifically, you can trace the changing of `current` (i.e., the PACA being
 updated with a new task pointer) to the following path
