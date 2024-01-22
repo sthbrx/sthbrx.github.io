@@ -346,9 +346,9 @@ static inline void restore_sprs(struct thread_struct *old_thread,
 }
 ```
 
-The gist is we first perform a series of `mfspr` operations, serialising the SPR
+The gist is we first perform a series of `mfspr` operations, saving the SPR
 values of the currently running task into its associated `task_struct`. Then we
-do a series of `mtspr` operations to deserialize the desired values of the new
+do a series of `mtspr` operations to restore the desired values of the new
 task back into the CPU.
 
 This procedure has two interesting optimisations, as explained by
@@ -410,7 +410,7 @@ we can access the currently running task's thread struct through the `current`
 macro. So, in theory, `current->thread` is an alias for `prev->thread`. Anything
 else wouldn't make any sense here, as we are storing the SPR values into
 `prev->thread`, but making decisions about their values in `restore_sprs()`
-based on the `current->thread` serialised values.
+based on the `current->thread` saved values.
 
 As for why we use both, it appears to be historical. We originally ran
 `restore_sprs()` after `_switch()`, which finishes swapping state from the
