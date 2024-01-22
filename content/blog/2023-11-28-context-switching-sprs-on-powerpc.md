@@ -195,10 +195,10 @@ resolve it to a real address. If it is a userspace address (top two bits are
 0) then the configured mapping is used. But if it is a kernel address (top two
 bits are 1) then the hardware always uses whatever mapping is in place for
 process ID 0 (the kernel knows this, so reserves process ID 0 for this purpose
-and does not allocate it to any tasks). So our change to the memory mapping only
-applies once we return to userspace, or try to access memory through a userspace
-address (through `get_user()` and `put_user()`). The hypervisor has similar
-quadrant functionality, but different rules.
+and does not allocate it to any userspace tasks). So our change to the memory
+mapping only applies once we return to userspace, or try to access memory
+through a userspace address (through `get_user()` and `put_user()`). The
+hypervisor has similar quadrant functionality, but different rules.
 
 ```c
 // arch/powerpc/include/asm/switch_to.h  (switch_to)
