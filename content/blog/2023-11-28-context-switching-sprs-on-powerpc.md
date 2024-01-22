@@ -368,15 +368,23 @@ that introduces `save_sprs()` and `restore_sprs()`:
 
 And that's basically it, as far as the implementation goes at least. When first
 investigating this one question that kept nagging me was: why do we read these
-values here, instead of tracking them as they are set? The answer is that we
-either don't know what they were set to, or they could change themselves
-according to some event. As they are not general purpose read/write registers,
-and instead reflect some kind of CPU state, some SPRs will automatically update
-in response to events or changes in CPU state. For example, condition flags on
-arithmetic operations are reflected in the Condition Register (CR). Other times
-they might be directly accessible to userspace, which can set them arbitrarily
-without kernel knowledge. Some of these SPRs are also 'uninteresting' to the
-kernel, so it does not preserve them with the rest of the GPRs and highly used SPRs.
+values here, instead of tracking them as they are set? I can think of several
+reasons this might be done:
+
+1. It's more robust to check at the time of swap what the current value is. You
+   otherwise risk that a single inline assembly `mtspr` in a completely
+   different part of the codebase breaks context switching. It would also mean
+   that every `mtspr` would have to disable interrupts, lest the context switch
+   occurs between the `mtspr` and recording the change in the task struct.
+2. It might be faster. Changing an SPR would need an accompanying write to the
+   task struct. This is pessimistic if there are many such changes to the SPR
+   between context switches.
+3. Even if you were to track every `mtspr` correctly, certain SPRs can be
+   changed by userspace without kernel assistance. Some of these SPRs are also
+   unused by the kernel, so saving them with the GPRs would be pessimistic (a
+   waste of time if the task ends up returning back to userspace without
+   swapping). For example, VRSAVE is an unprivileged scratch register that the
+   kernel doesn't make use of.
 
 
 ## Did you catch the issue with `restore_sprs()`?
