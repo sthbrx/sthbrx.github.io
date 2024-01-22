@@ -33,7 +33,11 @@ context switching discussion.
 
 To understand the difference between these three concepts, we'll start with how
 the kernel sees everything: tasks. Tasks are the kernel's view of an 'executable
-unit', a self contained thread of execution that has a beginning, performs some operations, then (maybe) ends. They are the indivisible building blocks upon which _multitasking_ and _multithreading_ can be built, where multiple tasks run independently, or optionally communicate in some manner to distribute work.
+unit' (think single threaded process), a self contained thread of execution that
+has a beginning, performs some operations, then (maybe) ends. They are the
+indivisible building blocks upon which _multitasking_ and _multithreading_ can
+be built, where multiple tasks run independently, or optionally communicate in
+some manner to distribute work.
 
 The kernel represents each task with a `struct task_struct`. This is an enormous
 struct (around 10KB) of all the pieces of data people have wanted to associate
