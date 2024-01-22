@@ -14,14 +14,14 @@ support for a hardware feature that interfaces with software through an SPR.
 
 ## What's a context anyway?
 
-The context we are concerned about in this post is the task context. That's
-all the state that makes up a 'task' in the eyes of the kernel. There are the
-obvious components, like the current register values, thread ID, memory
-mappings, etc., but there are also a few SPRs that get tracked on a per-task
-basis. By tracking SPR values for each task context, the kernel can emulate
-per-task support for these SPRs, despite the hardware being per-CPU. The kernel
-simply has to save the values when switching out a task, and set up the values
-stored for the task being switched in.
+The context we are concerned about in this post is the _task_ context. That's
+all the state that makes up a 'task' in the eyes of the kernel. These are
+resources like registers, the thread ID, memory mappings, and so on. The kernel
+is able to save and restore this state into a task context data structure,
+allowing it to run arbitrarily many tasks concurrently despite the limited
+number of CPU cores available. It can simply save these resource values when
+switching out a task, and replace the CPU state with the values stored by the
+task being switched in.
 
 Unless you're a long time kernel developer, chances are you haven't heard of or
 looked too closely at a 'task' in the kernel. The next section gives a rundown
