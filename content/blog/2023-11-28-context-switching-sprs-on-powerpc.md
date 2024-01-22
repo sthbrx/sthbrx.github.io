@@ -17,7 +17,7 @@ support for a hardware feature that interfaces with software through an SPR.
 The context we are concerned about in this post is the task context. That's
 all the state that makes up a 'task' in the eyes of the kernel. There are the
 obvious components, like the current register values, thread ID, memory
-mappings, etc., but there are also a few SPRs that get tracked on a per task
+mappings, etc., but there are also a few SPRs that get tracked on a per-task
 basis. By tracking SPR values for each task context, the kernel can emulate
 per-task support for these SPRs, despite the hardware being per-CPU. The kernel
 simply has to save the values when switching out a task, and set up the values
