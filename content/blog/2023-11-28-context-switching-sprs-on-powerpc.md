@@ -32,45 +32,52 @@ context switching discussion.
 ## Processes, threads, and tasks
 
 To understand the difference between these three concepts, we'll start with how
-the kernel sees everything: tasks. Tasks are the kernel's view of an executable
-unit, represented by a `struct task_struct`. This is an enormous struct (around
-10KB) of all the pieces of data people have wanted to associate with a
-particular unit of execution over the decades. The architecture specific state
-of the task is stored in a one-to-one mapped `struct thread_struct`, available
-through the `thread` member in the `task_struct`. The name 'thread' when
-referring to this structure on a task should not be confused with the concept of
-a thread we'll visit shortly.
+the kernel sees everything: tasks. Tasks are the kernel's view of an 'executable
+unit', a self contained thread of execution that has a beginning, performs some operations, then (maybe) ends. They are the indivisible building blocks upon which _multitasking_ and _multithreading_ can be built, where multiple tasks run independently, or optionally communicate in some manner to distribute work.
 
-A kernel task is highly flexible in terms of resource sharing. Many resources,
+The kernel represents each task with a `struct task_struct`. This is an enormous
+struct (around 10KB) of all the pieces of data people have wanted to associate
+with a particular unit of execution over the decades. The architecture specific
+state of the task is stored in a one-to-one mapped `struct thread_struct`,
+available through the `thread` member in the `task_struct`. The name 'thread'
+when referring to this structure on a task should not be confused with the
+concept of a thread we'll visit shortly.
+
+A task is highly flexible in terms of resource sharing. Many resources,
 such as the memory mappings and file descriptor tables, are held through
 reference counted handles to a backing data structure. This makes it easy to
 mix-and-match sharing of different components between other tasks.
 
-Crossing over to userspace, here we think of execution in terms of processes and
-threads. Typically, a process is viewed as an execution context that is isolated
-from other processes. For example, when created with the `fork()` syscall, the
-child process gains a independent copy of the parent process's state. It will
-share memory and open files at the time of the fork, but further changes to
-these resources in either process are not reflected in the other. Internally,
-the kernel simply duplicates the parent's task, and replaces relevant resources
-with copies of the parent's values.
+Approaching tasks from the point of view of userspace, here we think of
+execution in terms of processes and threads. If you want an 'executable unit' in
+userspace, you are understood to be talking about a process or thread. These are
+implemented as tasks by the kernel though; a detail like running in userspace
+mode on the CPU is just another property stored in the task struct.
 
-> Aside: for memory mappings the kernel uses
-> [copy-on-write (COW)](https://en.wikipedia.org/wiki/Copy-on-write)
-> to avoid duplicating all of the memory of the parent process. But from the
-> point of view of the processes, it is no longer shared.
+For an example of how tasks can either copy or share their parent's resources, consider what happens when creating a child process with the `fork()` syscall.
+The child will share memory and open files at the time of the fork,
+but further changes to these resources in either process are not visible to
+the other. At the time of the fork, the kernel simply duplicates the parent task and replaces relevant resources with copies of the parent's values[^cow].
 
-It is often useful to have multiple units of execution share things like memory
-and open files though: this is what threads provide. A process can be 'split'
-into multiple threads, each backed by its own kernel task. These threads can
+[^cow]: While this is conceptually what happens, the kernel can apply tricks to
+avoid the overhead of copying everything up front. For example, memory mappings
+apply [copy-on-write (COW)](https://en.wikipedia.org/wiki/Copy-on-write) to
+avoid duplicating all of the memory of the parent process. But from the point of
+view of the processes, it is no longer shared.
+
+It is often useful to have multiple processes share things like memory and open
+files though: this is what threads provide. A process can be 'split' into
+multiple threads[^split], each backed by its own task. These threads can
 share resources that are normally isolated between processes.
 
-The thread creation mechanism is very similar to process creation. The `clone()`
-family of syscalls allow creating a new thread that shares resources with the
-thread that cloned itself. Exactly what resources get shared between threads is
-highly configurable, thanks to the kernel's task representation. See the
-[`clone(2)` manpage](https://man7.org/linux/man-pages/man2/clone.2.html) for all
-the options. Creating a process can be thought of as creating a thread where
+[^split]: Or you could say that what we just called a 'process' _is_ a thread, and the 'process' is really a process group initially containing a single thread. In the end it's semantics that don't really matter to the kernel though. Any thread/process can create more threads that can share resources with the parent.
+
+This thread creation mechanism is very similar to process creation. The
+`clone()` family of syscalls allow creating a new thread that shares resources
+with the thread that cloned itself. Exactly what resources get shared between
+threads is highly configurable, thanks to the kernel's task representation. See
+the [`clone(2)` manpage](https://man7.org/linux/man-pages/man2/clone.2.html) for
+all the options. Creating a process can be thought of as creating a thread where
 nothing is shared. In fact, that's how `fork()` is implemented under the hood:
 the `fork()` syscall is implemented as a thin wrapper around `clone()`'s
 implementation where nothing is shared, including the process group ID.
