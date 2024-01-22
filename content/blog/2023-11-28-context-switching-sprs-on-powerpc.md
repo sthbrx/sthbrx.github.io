@@ -132,7 +132,7 @@ registers that, to put it simply, provide a catch-all set of functionalities for
 interacting with the CPU. They tend to affect or reflect the CPU state in
 various ways, though are very diverse in behaviour and purpose. Some SPRs, such
 as the Link Register (LR), are similar to GPRs in that you can read and write
-arbitrary data. They might have special interations with certain instructions,
+arbitrary data. They might have special interactions with certain instructions,
 such as the LR value being used as the branch target address of the `blr`
 (branch to LR) instruction. Others might provide a way to view or interact with
 more fundamental CPU state, such as the Authority Mask Register (AMR) which the
