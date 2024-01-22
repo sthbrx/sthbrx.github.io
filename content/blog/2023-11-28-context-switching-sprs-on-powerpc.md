@@ -6,7 +6,7 @@ Tags: linux
 
 ## Introduction
 
-This article is a dive (well, more of a meander) through some of the PowerPC
+This post is a dive (well, more of a meander) through some of the PowerPC
 specific aspects of context switching, especially on the Special Purpose
 Register (SPR) handling. It was motivated by my recent work on adding kernel
 support for a hardware feature that interfaces with software through an SPR.
@@ -14,7 +14,7 @@ support for a hardware feature that interfaces with software through an SPR.
 
 ## What's a context anyway?
 
-The context we are concerned about in this article is the task context. That's
+The context we are concerned about in this post is the task context. That's
 all the state that makes up a 'task' in the eyes of the kernel. There are the
 obvious components, like the current register values, thread ID, memory
 mappings, etc., but there are also a few SPRs that get tracked on a per task
