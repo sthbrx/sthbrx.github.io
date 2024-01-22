@@ -183,20 +183,20 @@ execution that defines (among other things) how to set up the state of
 the CPU.
 
 This function starts off with some generic preparation and memory context
-changes, before getting to the meat of the function with
+changes[^pid0], before getting to the meat of the function with
 `switch_to(prev, next,prev)`. This `switch_to()` call is actually a macro, which
 unwraps to a call to `__switch_to()`. It's also at this point that we enter the
 architecture specific implementation.
 
-> Aside: Changing the active memory mapping has no immediate effect on the
-> running code due to address space quadrants. In the hardware, the top two bits
-> of a 64 bit effective address determine what memory mapping is applied to
-> resolve it to a real address. If it is a userspace address (top two bits are
-> 0) then the configured mapping is used. But if it is a kernel address (top two
-> bits are 1) then the PID 0 mapping is always used. So our change to the memory
-> mapping only applies once we return to userspace, or try to access memory
-> through a userspace address (through `get_user()` and `put_user()`). The
-> hypervisor has similar quadrant functionality, but different rules.
+[^pid0]: Changing the active memory mapping has no immediate effect on the
+running code due to address space quadrants. In the hardware, the top two bits
+of a 64 bit effective address determine what memory mapping is applied to
+resolve it to a real address. If it is a userspace address (top two bits are
+0) then the configured mapping is used. But if it is a kernel address (top two
+bits are 1) then the PID 0 mapping is always used. So our change to the memory
+mapping only applies once we return to userspace, or try to access memory
+through a userspace address (through `get_user()` and `put_user()`). The
+hypervisor has similar quadrant functionality, but different rules.
 
 ```c
 // arch/powerpc/include/asm/switch_to.h  (switch_to)
