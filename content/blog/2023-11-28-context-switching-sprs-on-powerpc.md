@@ -148,12 +148,12 @@ per-task resource. But, depending on the particular SPR, writing to them can be
 _slow_. The highly used data-like SPRs such as LR, CTR (Count Register), etc.,
 are possible to [rename](https://en.wikipedia.org/wiki/Register_renaming),
 making them comparable to GPRs in terms of read/write performance. But others
-that affect the state of large parts of the CPU core, such as the [Data Stream
-Control Register (DSCR)](https://docs.kernel.org/next/powerpc/dscr.html), can
-take a while for the effects of changing them to be applied. Well, not so slow
-that you will notice the occasional access, but there's one case in the kernel
-that occurs extremely often and needs to change a lot of these SPRs to support
-our per-task abstraction: context switches.
+that affect the state of large parts of the CPU core, such as the
+[Data Stream Control Register (DSCR)](https://docs.kernel.org/next/powerpc/dscr.html),
+can take a while for the effects of changing them to be applied. Well, not so
+slow that you will notice the occasional access, but there's one case in the
+kernel that occurs extremely often and needs to change a lot of these SPRs to
+support our per-task abstraction: context switches.
 
 
 ## Anatomy of a context switch
