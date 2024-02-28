@@ -6,21 +6,21 @@ Tags: linux
 
 ## Introduction
 
-CPU cores are very limited in number. Right now my computer tells me it's
-running around 500 processes, and I definitely do not have that many CPU cores.
-The ability for the operating system to virtualise the concept of an 'execution
-unit' and swap them in and out of running on the limited pool of CPU cores is
-one of the foundations of modern computing.
+CPU cores are limited in number. Right now my computer tells me it's running
+around 500 processes, and I definitely do not have that many cores. The
+operating systems ability to virtualise work as independent 'executable units'
+and distribute them across the limited CPU pool is one of the foundations of
+modern computing.
 
 The Linux kernel calls these virtual execution units _tasks_. Each task
 encapsulates all the information the kernel needs to swap it in and out of
-running on a CPU core, including register state, memory mappings, file
-descriptor table, and any other resource that needs to be tied to a particular
-task. Nearly every workload in the kernel, including kernel background jobs and
-userspace threads, is handled by this unified task concept. The kernel uses a
-scheduler to determine when and where to run tasks according to some parameters,
-such as maximising throughput, minimising latency, or whatever other
-characteristics the user desires.
+running on a CPU core. This includes register state, memory mappings, open
+files, and any other resource that needs to be tied to a particular task. Nearly
+every workload in the kernel, including kernel background jobs and userspace
+processes, are handled by this unified task concept. The kernel uses a scheduler
+to determine when and where to run tasks according to some parameters, such as
+maximising throughput, minimising latency, or whatever other characteristics the
+user desires.
 
 In this article, we'll dive into the lifecycle of a task in the kernel. This is
 a PowerPC blog, so any architecture specific (often shortened to 'arch')
@@ -33,10 +33,10 @@ content. Call stacks are provided to help orient yourself in many case.
 
 ## Booting
 
-The kernel starts up with no concept of tasks, just running from whatever
-location the bootloader decided to start it at. The first idea of a task takes
-root in `early_setup()` where we initialise the PACA (what this is short for is
-unclear).
+The kernel starts up with no concept of tasks, it just runs from the location
+the bootloader started it (the `__start` function for PowerPC). The first idea
+of a task takes root in `early_setup()` where we initialise the PACA (I asked,
+but what this stands for is unclear).
 
 ```c
 __start()  // AKA address 0; in first_256B section
@@ -48,8 +48,8 @@ __start()  // AKA address 0; in first_256B section
             new_paca->__current = &init_task;
 ```
 
-We use the PACA to (among other things) hold a reference to the active task, and
-the task we start with is the special `init_task`. To avoid ambiguity with the
+We use the PACA to (among other things) hold a reference to the active task.
+The task we start with is the special `init_task`. To avoid ambiguity with the
 userspace init task we see later, I'll refer to `init_task` as the _boot task_
 from here onwards. This boot task is a statically defined instance of a
 `task_struct` that is the root of all future tasks. Its resources are various
@@ -158,9 +158,15 @@ After this, the boot task calls `cpu_startup_entry()`, which transforms it into
 the idle task for the boot CPU and enters the idle loop. We're now almost fully
 task driven, and our journey picks back up inside of the init task.
 
-> Tip: when looking at the kernel boot console, you can tell what print actions
-> are performed by the boot task vs the init task. The `init_task` has PID 0, so
-> lines start with `T0`. The init task has PID 1, so appears as `T1`.
+Bonus tip: when looking at the kernel boot console, you can tell what print
+actions are performed by the boot task vs the init task. The `init_task` has PID
+0, so lines start with `T0`. The init task has PID 1, so appears as `T1`.
+
+```text
+[    0.039772][    T0] printk: legacy console [hvc0] enabled
+...
+[   28.272167][    T1] Run /init as init process
+```
 
 
 ## The init task
@@ -170,7 +176,7 @@ function. Execution simply begins from here[^begin] once it gets woken up for
 the first time. The very first thing we do is wait[^wait] for the kthreadd task
 to be created: if we were to try and create a kthread before this, when the
 kthread creation mechanism tries to wake up the kthreadd task it would be using
-an uninitialised pointer, causing an Oops. To prevent this, the init task waits
+an uninitialised pointer, causing an oops. To prevent this, the init task waits
 on a completion object that the boot task marks completed after creating
 kthreadd. We could technically avoid this synchronization altogether just by
 creating kthreadd first, but then the init task wouldn't have PID 1.
@@ -488,7 +494,7 @@ context_switch()
 
 One interesting consequence of tasks calling `context_switch()` is that the
 previous task is 'suspended'[^2] right where it saves its registers and puts in
-the new tasks's values. When it is woken up again at some point in the future it
+the new task's values. When it is woken up again at some point in the future it
 resumes right where it left off. So when you are reading the `__switch_to()`
 implementation, you are actually looking at two different tasks in the same
 function.
