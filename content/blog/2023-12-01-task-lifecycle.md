@@ -351,16 +351,17 @@ state.
 
 The last remaining job of the kernel side of the init task is to actually load
 in and execute the selected userspace program. It's not like we can just call
-the userspace entry point though: we need to get a little creative here.
+the userspace entry point though: we need to be a little creative here.
 
-The first step has already been done for us. When we created the init task, we
-declared it to have a kernel entry point, but that it was not a kthread. The
-`clone_thread()` implementation doesn't set the given entry point directly: it
-instead sets a small shim that is actually used when the new task eventually
-gets woken up. The shim expects the requested entry point to be passed via a
-specific non-volatile register and, in the case of a kthread, basically just
-calls this after some minor bookkeeping. A kthread should never return directly,
-so we trap if this happens.
+As alluded to above, when we create tasks with `clone_thread()`, it doesn't set
+the provided entry point directly: it instead sets a small shim that is actually
+used when the new task eventually gets woken up. The particular shim it uses is
+determined by whether the task is a kthread or not.
+
+Both kinds of shim expect the requested entry point to be passed via a specific
+non-volatile register and, in the case of a kthread, basically just invokes it
+after some minor bookkeeping. A kthread should never return directly, so it
+traps if this happens.
 
 ```asm
 _GLOBAL(start_kernel_thread)
@@ -382,8 +383,8 @@ _GLOBAL(start_kernel_thread)
 
 But the init task isn't a kthread. We passed a kernel entrypoint to
 `copy_thread()` but did not set the kthread flag, so `copy_thread()` inferred
-that this means the task will eventually turn into a userspace task. This makes
-it use `ret_from_kernel_user_thread()` for the entry point shim.
+that this means the task will eventually run in userspace. This makes it use the
+`ret_from_kernel_user_thread()` shim.
 
 ```asm
 _GLOBAL(ret_from_kernel_user_thread)
