@@ -1,5 +1,5 @@
 Title: Lifecycle of a kernel task
-Date: 2024-03-20 08:00:00
+Date: 2024-03-21 08:00:00
 Authors: Benjamin Gray
 Category: Development
 Tags: linux
@@ -571,7 +571,7 @@ whatever task is active (restoring the PACA is done very early). If we were in
 userspace (MSR<sub>PR</sub> was 1) we consider ourselves to be in 'process
 context'. This is, in some sense, the default state in the kernel. We are able
 to sleep (i.e., invoke the scheduler and swap ourselves out), take locks, and
-generally do anything you might like to do in kernel mode. This is in contrast
+generally do anything you might like to do in the kernel. This is in contrast
 to 'atomic context', where certain parts of the kernel expect to be executed
 without interruption or sleeping.
 
