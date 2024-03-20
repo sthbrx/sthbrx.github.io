@@ -8,7 +8,7 @@ Tags: linux
 
 CPU cores are limited in number. Right now my computer tells me it's running
 around 500 processes, and I definitely do not have that many cores. The
-operating systems ability to virtualise work as independent 'executable units'
+operating system's ability to virtualise work as independent 'executable units'
 and distribute them across the limited CPU pool is one of the foundations of
 modern computing.
 
