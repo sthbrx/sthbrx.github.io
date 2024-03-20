@@ -6,7 +6,7 @@ Category: OpenPOWER
 Author: Cyril Bur
 
 This entry is a followup to part I which you should absolutely read
-[here]({filename}2017-08-07-power8_memcmp.markdown) before continuing
+[here]({filename}2017-08-07-power8_memcmp.md) before continuing
 on.
 
 ## Where we left off ##
