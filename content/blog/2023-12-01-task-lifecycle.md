@@ -12,7 +12,7 @@ operating system's ability to virtualise work as independent 'executable units'
 and distribute them across the limited CPU pool is one of the foundations of
 modern computing.
 
-The Linux kernel calls these virtual execution units _tasks_. Each task
+The Linux kernel calls these virtual execution units _tasks_[^task]. Each task
 encapsulates all the information the kernel needs to swap it in and out of
 running on a CPU core. This includes register state, memory mappings, open
 files, and any other resource that needs to be tied to a particular task. Nearly
@@ -21,6 +21,8 @@ processes, are handled by this unified task concept. The kernel uses a scheduler
 to determine when and where to run tasks according to some parameters, such as
 maximising throughput, minimising latency, or whatever other characteristics the
 user desires.
+
+[^task]: Read more on tasks in [my previous post]({filename}2023-11-28-context-switching-sprs-on-powerpc.md)
 
 In this article, we'll dive into the lifecycle of a task in the kernel. This is
 a PowerPC blog, so any architecture specific (often shortened to 'arch')
