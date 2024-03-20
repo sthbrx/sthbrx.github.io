@@ -16,8 +16,8 @@ The Linux kernel calls these virtual execution units _tasks_[^task]. Each task
 encapsulates all the information the kernel needs to swap it in and out of
 running on a CPU core. This includes register state, memory mappings, open
 files, and any other resource that needs to be tied to a particular task. Nearly
-every workload in the kernel, including kernel background jobs and userspace
-processes, are handled by this unified task concept. The kernel uses a scheduler
+every work item in the kernel, including kernel background jobs and userspace
+processes, is handled by this unified task concept. The kernel uses a scheduler
 to determine when and where to run tasks according to some parameters, such as
 maximising throughput, minimising latency, or whatever other characteristics the
 user desires.
@@ -30,7 +30,7 @@ references are referring to PowerPC. To make the most out of this you should
 also have a copy of the kernel source open alongside you, to get a sense of what
 else is happening in the locations we discuss below. This article hyper-focuses
 on specific details of setting up tasks, leaving out a lot of possibly related
-content. Call stacks are provided to help orient yourself in many case.
+content. Call stacks are provided to help orient yourself in many cases.
 
 
 ## Booting
@@ -38,26 +38,28 @@ content. Call stacks are provided to help orient yourself in many case.
 The kernel starts up with no concept of tasks, it just runs from the location
 the bootloader started it (the `__start` function for PowerPC). The first idea
 of a task takes root in `early_setup()` where we initialise the PACA (I asked,
-but what this stands for is unclear).
+but what this stands for is unclear). The PACA is used to hold a lot of core
+per-cpu information, such as the CPU index (for generic per-cpu variables) and a
+pointer to the active task.
 
 ```c
-__start()  // AKA address 0; in first_256B section
+__start()  // ASM implementation, defined in head_64.S
   __start_initialization_multiplatform()
     __after_prom_start()
       start_here_multiplatform()
-        early_setup()   // switched to C here
+        early_setup()   // switched to C here, defined in setup_64.c
           initialise_paca()
             new_paca->__current = &init_task;
 ```
 
-We use the PACA to (among other things) hold a reference to the active task.
-The task we start with is the special `init_task`. To avoid ambiguity with the
+We use the PACA to (among other things) hold a reference to the active task. The
+task we start with is the special `init_task`. To avoid ambiguity with the
 userspace init task we see later, I'll refer to `init_task` as the _boot task_
 from here onwards. This boot task is a statically defined instance of a
-`task_struct` that is the root of all future tasks. Its resources are various
-`init_*` versions of things, themselves each statically defined somewhere. We
-aren't taking advantage of the context switching capability of tasks this early
-in boot, we just need to look like we're a task for any initialisation code that
+`task_struct` that is the root of all future tasks. Its resources are likewise
+statically defined, typically named following the pattern `init_*`. We aren't
+taking advantage of the context switching capability of tasks this early in
+boot, we just need to look like we're a task for any initialisation code that
 cares. For now we continue to work as a single CPU core with a single task.
 
 We continue on and reach `start_kernel()`, the generic entry point of the kernel
@@ -183,7 +185,7 @@ on a completion object that the boot task marks completed after creating
 kthreadd. We could technically avoid this synchronization altogether just by
 creating kthreadd first, but then the init task wouldn't have PID 1.
 
-[^begin]: Well, it actually begins at a small Assembly shim, but close enough
+[^begin]: Well, it actually begins at a small assembly shim, but close enough
     for now.
 
 [^wait]: The wait mechanism itself is an interesting example of interacting with
@@ -284,7 +286,7 @@ __start()
     __boot_from_prom()
       prom_init()    // switched to C here
         prom_hold_cpus()
-          // secondary_hold is alias for __secondary_hold Assembly function
+          // secondary_hold is alias for __secondary_hold assembly function
           call_prom("start-cpu", ..., secondary_hold, ...);  // on each coprocessor
 ```
 
@@ -296,7 +298,7 @@ point address of the coprocessors to `__secondary_hold_spinloop`. All the
 spinning coprocessors now see this value, and jump to it. This function,
 `generic_secondary_smp_init()`, will set up the coprocessor's PACA value,
 perform some machine specific initialisation if `cur_cpu_spec->cpu_restore` is
-set[^restore], atomically decrement a `spinning_secondaries` variable, and start
+set,[^restore] atomically decrement a `spinning_secondaries` variable, and start
 spinning once again until further notice. This time it is waiting on the PACA
 field `cpu_start`, so we can start coprocessors individually.
 
@@ -306,7 +308,7 @@ field `cpu_start`, so we can start coprocessors individually.
     `__restore_cpu_*` family of functions might be called, which mostly
     initialise certain SPRs to sane values.
 
-We leave the coprocessors here for another while, until the init task calls
+We leave the coprocessors here for a while, until the init task calls
 `kernel_init_freeable()`. This function is used for any initialisation required
 _after_ kthreads are running, but _before_ all the `__init` sections are
 dropped. The setup relevant to coprocessors is the call to `smp_init()`. Here we
@@ -327,11 +329,11 @@ smp_init()
     cpuhp_bringup_mask()
       cpu_up()
         _cpu_up()
-          cpuhp_up_callbacks()  // invokes the .startup.single CPUHP_BRINGUP_CPU callback
+          cpuhp_up_callbacks()  // invokes the CPUHP_BRINGUP_CPU .startup.single function
             bringup_cpu()
               __cpu_up()
                 cpu_idle_thread_init()  // sets CPU's task in PACA to its idle task
-                smp_ops->prepare_cpu()  // on pSeries inits Xive if in use
+                smp_ops->prepare_cpu()  // on pSeries inits XIVE if in use
                 smp_ops->kick_cpu()     // indirect call to smp_pSeries_kick_cpu()
                   smp_pSeries_kick_cpu()
                     paca_ptrs[nr]->cpu_start = 1  // the coprocessor was spinning on this value
@@ -421,7 +423,7 @@ run_init_process()
 
 The outer few calls mainly handle checking prerequisites and bookkeeping. The
 `exec_binrpm()` call also handles shebang redirection, allowing up to 5 levels
-of interpretor. At each level it invokes `search_binary_handler()`, which
+of interpreter. At each level it invokes `search_binary_handler()`, which
 attempts to find a handler for the program file's format. Contrary to the name,
 the searcher will also immediately try to load the file if it finds an
 appropriate handler. It's this call to `load_binary` (dispatched to whatever
@@ -469,11 +471,12 @@ The last piece of the puzzle (as far as this article will look at!) is how tasks
 are switched in and out, and some of the rules around when it can and can't
 happen. Once the init and kthreadd tasks are created, we call
 `cpu_startup_entry(CPUHP_ONLINE)`. Any coprocessors have also been released to
-call this by now too. These are considered 'idle tasks', which serve to run when
-no other tasks are available to run. They will spin on a check for pending work,
-entering an idle state each loop until they see pending tasks to run. They then
-call `__schedule()` in a loop (also conditional on pending tasks existing), and
-then return back to the idle loop once everything in the moment is handled.
+call this by now too. Their tasks are repurposed to 'idle tasks', which serve to
+run when no other tasks are available to run. They will spin on a check for
+pending work, entering an idle state each loop until they see pending tasks to
+run. They then call `__schedule()` in a loop (also conditional on pending tasks
+existing), and then return back to the idle loop once everything in the moment
+is handled.
 
 The `__schedule()` function is the main guts of the scheduler, which until now
 has seemed like some nebulous controller that's governing when and where our
@@ -523,20 +526,26 @@ pointers for understanding the execution model of the kernel.
 
 The following are some questions you might have (read: I had).
 
-### Do userspace tasks run in the kernel?
+### Do we change the task struct when serving a syscall?
 
-Yes, 'userspace' tasks run in the kernel. We don't have dedicated tasks to swap
-out to. Thanks to address space quadrants we don't even need to change the
-active memory mapping: upon entry to the kernel we automatically start using the
-PID 0 mapping.
+No, the task struct stays the same. The task struct declares it represents a
+userspace task, but it stays as the active task when serving syscalls or similar
+actions on behalf of its userspace execution.
+
+Thanks to address space quadrants we don't even need to change the active memory
+mapping: upon entry to the kernel we automatically start using the PID 0
+mapping.
 
 
 ### Where does a task get allocated a PID?
 
-Referring to the hardware PID, used for virtual memory translations, this is
-actually a property of the memory mapping struct (`mm_struct`). You can find a
-PID being allocated when a new `mm_struct` is created, which may or may not
-occur depending on the task clone parameters.
+Software PIDs are allocated when spawning a new process. However, if the process
+shares memory mappings with another (such as threads can), it may not be
+allocated a new hardware PID. Referring to the PID used for virtual memory
+translations, the hardware PID is actually a property of the memory mapping
+struct (`mm_struct`). You can find a hardware PID being allocated when a new
+`mm_struct` is created, which may or may not occur depending on the task clone
+parameters.
 
 
 ### How can the fork and exec syscalls be hooked into for arch specific handling?
@@ -544,25 +553,28 @@ occur depending on the task clone parameters.
 Fork (and clone) will always invoke `copy_thread()`. The exec call will invoke
 `start_thread()` when loading a binary file. Any other kind of file (script,
 binfmt-misc) will eventually require some form of binary file to load/bootstrap
-it, so `start_thread()` should work for your purposes.
+it, so `start_thread()` should work for your purposes. You can also use
+`arch_setup_new_exec()` for a cleaner hook into exec.
 
 The task context of the calls is fairly predictable: `current` in
 `copy_thread()` refers to the parent because we are still in the middle of
-copying it. For `start_thread()` we have that `current` refers to the task that
-is going to be the new program because it is just configuring itself.
+copying it. For `start_thread()`, `current` refers to the task that is going to
+be the new program because it is just configuring itself.
 
 
 ### Where do exceptions/interrupts fit in?
 
 When a hardware interrupt triggers it just stops whatever it was doing and dumps
-us at the corresponding exception handler. Our `current()` value still points to
+us at the corresponding exception handler. Our `current` value still points to
 whatever task is active (restoring the PACA is done very early). If we were in
-userspace (MSR<sub>PR</sub> is 0) we consider ourselves to be in 'process
-state'. This is, in some sense, the default state in the kernel. We are able to
-sleep (i.e., invoke the scheduler and swap ourselves out), take locks, and
-generally do anything you might like to do in kernel mode.
+userspace (MSR<sub>PR</sub> was 1) we consider ourselves to be in 'process
+context'. This is, in some sense, the default state in the kernel. We are able
+to sleep (i.e., invoke the scheduler and swap ourselves out), take locks, and
+generally do anything you might like to do in kernel mode. This is in contrast
+to 'atomic context', where certain parts of the kernel expect to be executed
+without interruption or sleeping.
 
-However we are a bit more restricted if we arrived at an interrupt from
+However, we are a bit more restricted if we arrived at an interrupt from
 supervisor mode. For example, we don't know if we interrupted an atomic context,
 so we can't safely do anything that might cause sleep. This is why in some
 interrupt handlers like `do_program_check()` we have to check `user_mode(regs)`
