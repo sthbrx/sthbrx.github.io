@@ -14,7 +14,7 @@ I was invited to present on the Linux Technology Centre's work on enabling OpenC
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/zCIMHbZDRS0" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-My [slides]({filename}/misc/OPFEU2018_OpenCAPI.pdf) are available, though you'll want to watch the presentation for context.
+My [slides]({static}/misc/OPFEU2018_OpenCAPI.pdf) are available, though you'll want to watch the presentation for context.
 
 Apart from myself, the OzLabs team were well represented at the Summit:
 
